@@ -3,134 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Medicine Dispenser</title>
+    <title>PillSmart - Smart Medicine Dispenser</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
     <link rel="stylesheet" href="style.css?v=16.0">
 </head>
 
 <body class="bg-gray-100 font-sans">
 
+    <!-- Toast -->
     <div id="toast" class="bg-teal-500"></div>
 
-    <!-- AUTH PAGE (UNCHANGED) -->
+    <!-- ================= AUTH PAGE ================= -->
     <div id="authPage" class="min-h-screen flex items-center justify-center p-4 bg-gray-200">
-        <!-- (Everything inside auth remains exactly same) -->
-        <!-- I did not modify your auth UI -->
+
+        <div class="login-container w-full max-w-5xl">
+
+            <!-- Left Panel -->
+            <div class="login-left-panel relative hidden lg:flex">
+                <div class="login-left-content z-20 flex flex-col justify-between h-full">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-fill ph-pill text-3xl"></i>
+                        <span class="text-xl font-bold">PillSmart</span>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold leading-relaxed mb-4">
+                            "Simplifying health, one pill at a time."
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="login-right-panel w-full lg:w-3/5">
+
+                <!-- LOGIN -->
+                <div id="login-form-container" class="max-w-md mx-auto w-full">
+
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
+                    <p class="text-gray-600 mb-8">Access your personalized medicine dashboard.</p>
+
+                    <form id="login-form" class="space-y-6">
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="login-email" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <div class="relative">
+                                <input type="password" id="login-password" class="pr-10" required>
+                                <button type="button" id="toggle-login-pass"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    <i class="ph-bold ph-eye text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm">
+                            <a href="#" id="forgot-password-link" class="text-teal-600 hover:underline">
+                                Forgot password?
+                            </a>
+
+                            <label class="flex items-center cursor-pointer">
+                                <span class="mr-2 text-gray-700">Remember me</span>
+                                <input type="checkbox" id="rememberMe">
+                            </label>
+                        </div>
+
+                        <button type="submit" class="primary-btn w-full">
+                            Log In
+                        </button>
+                    </form>
+
+                    <p class="text-sm text-gray-500 mt-8 text-center">
+                        Don't have an account?
+                        <a href="#" id="show-signup-link" class="text-teal-600 hover:underline">
+                            Sign Up
+                        </a>
+                    </p>
+                </div>
+
+                <!-- SIGNUP -->
+                <div id="signup-form-container" class="max-w-md mx-auto w-full page-hidden">
+
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
+
+                    <form id="signup-form" class="space-y-4">
+
+                        <input type="text" id="signup-name" placeholder="Full Name" required>
+                        <input type="email" id="signup-email" placeholder="Email" required>
+                        <input type="password" id="signup-password" placeholder="Password" required>
+
+                        <button type="submit" class="primary-btn w-full !mt-6">
+                            Create Account
+                        </button>
+                    </form>
+
+                    <p class="text-sm text-gray-500 mt-8 text-center">
+                        Already have an account?
+                        <a href="#" id="show-login-link" class="text-teal-600 hover:underline">
+                            Log In
+                        </a>
+                    </p>
+                </div>
+
+                <!-- RESET PASSWORD -->
+                <div id="forgot-password-container" class="max-w-md mx-auto w-full page-hidden">
+
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Reset Password</h1>
+
+                    <form id="reset-password-form" class="space-y-4">
+
+                        <input type="email" id="reset-email" placeholder="Email" required>
+                        <input type="password" id="reset-password" placeholder="New Password" required>
+
+                        <button type="submit" class="primary-btn w-full !mt-6">
+                            Update Password
+                        </button>
+                    </form>
+
+                    <p class="text-sm text-gray-500 mt-8 text-center">
+                        <a href="#" id="back-to-login-link" class="text-teal-600 hover:underline">
+                            Back to Login
+                        </a>
+                    </p>
+                </div>
+
+            </div>
+        </div>
     </div>
 
-    <!-- MAIN APP -->
+    <!-- ================= MAIN APP ================= -->
+
     <div id="appContainer" class="page-hidden min-h-screen relative">
 
-        <header class="main-app-header py-4 px-6 md:px-8 flex items-center justify-between">
+        <header class="main-app-header py-4 px-6 flex justify-between items-center">
             <div class="flex items-center gap-4">
                 <i class="ph-fill ph-pill text-3xl text-teal-500"></i>
                 <span class="text-xl font-bold text-gray-800">PillSmart</span>
             </div>
 
-            <nav class="hidden md:flex items-center gap-2">
-                <a href="#" class="top-nav-link" data-top-menu="about-us">About Us</a>
-                <a href="#" class="top-nav-link" data-top-menu="product">Our Product</a>
-            </nav>
-
-            <div class="flex items-center gap-4">
-                <button id="logout-btn" class="flex items-center gap-2 text-gray-600 font-medium py-2 px-4 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer border border-transparent hover:border-red-200">
-                    <i class="ph-bold ph-sign-out text-xl"></i>
-                    <span class="hidden md:inline">Logout</span>
-                </button>
-
-                <button id="profile-btn-placeholder" class="rounded-full h-10 w-10 bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors ring-2 ring-transparent hover:ring-teal-300 cursor-pointer"></button>
-
-                <button id="mobile-menu-btn" class="md:hidden text-gray-700 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                    <i class="ph-bold ph-list text-2xl"></i>
-                </button>
-            </div>
+            <button id="logout-btn" class="text-red-600 font-medium">
+                Logout
+            </button>
         </header>
 
         <div class="flex">
-            <aside class="hidden md:flex md:flex-col md:w-64 bg-white shadow-lg h-[calc(100vh-80px)] sticky top-20">
-                <nav id="sidebar-nav" class="flex-1 overflow-y-auto py-4"></nav>
+
+            <aside class="hidden md:flex md:flex-col md:w-64 bg-white shadow-lg">
+                <nav id="sidebar-nav" class="py-4"></nav>
             </aside>
 
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 md:p-8 pb-24">
-                <h1 id="page-title" class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
-
-                <!-- PAGE CONTENT -->
+            <main class="flex-1 p-6">
+                <h1 id="page-title" class="text-3xl font-bold text-gray-900 mb-6">
+                    Dashboard
+                </h1>
                 <div id="page-content"></div>
-
-                <!-- SLOT SCHEDULING TEMPLATE (NEW) -->
-                <div id="slot-scheduling-template" class="hidden">
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                        <!-- Slot Card Template -->
-                        <template id="slot-card-template">
-                            <div class="bg-white rounded-xl shadow p-6 border border-gray-200">
-                                
-                                <h2 class="text-xl font-semibold text-teal-600 mb-4">
-                                    Slot <span class="slot-number"></span>
-                                </h2>
-
-                                <div class="space-y-4">
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Medicine Name
-                                        </label>
-                                        <input type="text" class="medicine-name w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Total Tablets Inserted
-                                        </label>
-                                        <input type="number" min="0" class="total-tablets w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Schedule (Time & Dosage)
-                                        </label>
-
-                                        <div class="schedule-container space-y-2"></div>
-
-                                        <button type="button" class="add-time-btn text-sm text-teal-600 hover:underline mt-2">
-                                            + Add Time
-                                        </button>
-                                    </div>
-
-                                    <button type="button" class="save-slot-btn primary-btn w-full">
-                                        Save Slot
-                                    </button>
-
-                                </div>
-                            </div>
-                        </template>
-
-                    </div>
-
-                </div>
-
             </main>
+
         </div>
 
-        <!-- MOBILE MENU (UNCHANGED) -->
-        <div id="mobile-menu" class="page-hidden fixed inset-0 bg-gray-900/50 z-40 md:hidden">
-            <div id="mobile-sidebar" class="fixed top-0 left-0 w-64 h-full bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out z-50">
-                <div class="flex items-center justify-between h-16 border-b border-gray-200 px-4">
-                    <div class="flex items-center">
-                        <i class="ph-fill ph-pill text-3xl text-teal-500"></i>
-                        <span class="text-xl font-bold text-gray-800 ml-2">PillSmart</span>
-                    </div>
-                    <button id="close-menu-btn" class="text-gray-700 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                        <i class="ph-bold ph-x text-2xl"></i>
-                    </button>
-                </div>
-                <nav id="mobile-nav-content" class="py-4"></nav>
-            </div>
-        </div>
+        <nav id="bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t"></nav>
 
-        <nav id="bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg flex justify-around h-16 items-center z-30"></nav>
     </div>
 
     <script src="script.js?v=16.0"></script>
