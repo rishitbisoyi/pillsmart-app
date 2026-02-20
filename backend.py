@@ -25,7 +25,7 @@ client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
 db = client['medicine_dispenser_db']
 
 users_col = db['users']
-slots_col = db['slots']
+inventory_col = db['inventory']
 logs_col = db['logs']
 
 print("✓ MongoDB Connected")
@@ -84,6 +84,9 @@ def register_user():
         'custom_ringtone': ''
     })
 
+    # Create empty inventory
+    create_empty_inventory(data['email'])
+
     return jsonify({"success": True})
 
 
@@ -112,109 +115,101 @@ def login_user():
         "name": user['name']
     })
 
-# ---------------- PROFILE ----------------
+# ---------------- INVENTORY SYSTEM ----------------
 
-@app.route("/get_profile", methods=["GET"])
-@token_required
-def get_profile(current_user):
-    return jsonify({
-        "name": current_user.get("name"),
-        "email": current_user.get("email"),
-        "profile_pic": current_user.get("profile_pic", ""),
-        "custom_ringtone": current_user.get("custom_ringtone", "")
-    })
-
-
-@app.route("/update_profile", methods=["POST"])
-@token_required
-def update_profile(current_user):
-    data = request.json
-    update_data = {}
-
-    if 'name' in data:
-        update_data['name'] = data['name']
-    if 'profile_pic' in data:
-        update_data['profile_pic'] = data['profile_pic']
-    if 'custom_ringtone' in data:
-        update_data['custom_ringtone'] = data['custom_ringtone']
-
-    users_col.update_one({'email': current_user['email']}, {'$set': update_data})
-    return jsonify({"success": True})
-
-# ---------------- SLOT SYSTEM ----------------
-
-def create_empty_slots(user_email):
+def create_empty_inventory(user_email):
     slots = []
     for i in range(1, 9):
         slots.append({
-            "slot": i,
+            "slot_number": i,
             "medicine_name": "",
             "total_tablets": 0,
             "tablets_left": 0,
-            "schedule": [],
-            "user_email": user_email
+            "schedules": []
         })
-    slots_col.insert_many(slots)
+
+    inventory_col.insert_one({
+        "user_email": user_email,
+        "slots": slots
+    })
 
 
-@app.route("/get_slots", methods=["GET"])
+@app.route("/get_inventory", methods=["GET"])
 @token_required
-def get_slots(current_user):
+def get_inventory(current_user):
 
-    user_slots = list(slots_col.find({'user_email': current_user['email']}, {'_id': 0}))
+    inventory = inventory_col.find_one(
+        {'user_email': current_user['email']},
+        {'_id': 0}
+    )
 
-    if not user_slots:
-        create_empty_slots(current_user['email'])
-        user_slots = list(slots_col.find({'user_email': current_user['email']}, {'_id': 0}))
+    if not inventory:
+        create_empty_inventory(current_user['email'])
+        inventory = inventory_col.find_one(
+            {'user_email': current_user['email']},
+            {'_id': 0}
+        )
 
-    return jsonify(user_slots)
+    return jsonify(inventory)
 
 
 @app.route("/update_slot", methods=["POST"])
 @token_required
 def update_slot(current_user):
+
     data = request.json
+    slot_number = int(data['slot_number'])
 
-    slot_number = int(data['slot'])
+    inventory = inventory_col.find_one({'user_email': current_user['email']})
 
-    slots_col.update_one(
-        {'slot': slot_number, 'user_email': current_user['email']},
-        {'$set': {
-            'medicine_name': data.get('medicine_name', ''),
-            'total_tablets': data.get('total_tablets', 0),
-            'tablets_left': data.get('total_tablets', 0),
-            'schedule': data.get('schedule', [])
-        }}
+    if not inventory:
+        return jsonify({"error": "Inventory not found"}), 404
+
+    for slot in inventory['slots']:
+        if slot['slot_number'] == slot_number:
+            slot['medicine_name'] = data.get('medicine_name', "")
+            slot['total_tablets'] = data.get('total_tablets', 0)
+            slot['tablets_left'] = data.get('total_tablets', 0)
+            slot['schedules'] = data.get('schedules', [])
+
+    inventory_col.update_one(
+        {'user_email': current_user['email']},
+        {'$set': {'slots': inventory['slots']}}
     )
 
     return jsonify({"success": True})
 
-# ---------------- DISPENSE LOGIC ----------------
+# ---------------- DISPENSE + LOG ----------------
 
 @app.route("/log_dispense", methods=["POST"])
 @token_required
 def log_dispense(current_user):
-    data = request.json
 
-    slot_number = int(data['slot'])
+    data = request.json
+    slot_number = int(data['slot_number'])
     dosage = int(data['dosage'])
 
-    slot = slots_col.find_one({'slot': slot_number, 'user_email': current_user['email']})
+    inventory = inventory_col.find_one({'user_email': current_user['email']})
 
-    if slot and slot['tablets_left'] >= dosage:
-        new_count = slot['tablets_left'] - dosage
+    for slot in inventory['slots']:
+        if slot['slot_number'] == slot_number:
 
-        slots_col.update_one(
-            {'slot': slot_number, 'user_email': current_user['email']},
-            {'$set': {'tablets_left': new_count}}
-        )
+            if slot['tablets_left'] >= dosage:
+                slot['tablets_left'] -= dosage
 
-        logs_col.insert_one({
-            'slot': slot_number,
-            'dosage': dosage,
-            'time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-            'user_email': current_user['email']
-        })
+                logs_col.insert_one({
+                    "slot_number": slot_number,
+                    "medicine_name": slot['medicine_name'],
+                    "dosage": dosage,
+                    "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "status": "Taken",
+                    "user_email": current_user['email']
+                })
+
+    inventory_col.update_one(
+        {'user_email': current_user['email']},
+        {'$set': {'slots': inventory['slots']}}
+    )
 
     return jsonify({"success": True})
 
@@ -222,13 +217,21 @@ def log_dispense(current_user):
 @app.route("/get_logs", methods=["GET"])
 @token_required
 def get_logs(current_user):
-    logs = list(logs_col.find({'user_email': current_user['email']}, {'_id': 0}).sort('_id', -1))
+
+    logs = list(
+        logs_col.find(
+            {'user_email': current_user['email']},
+            {'_id': 0}
+        ).sort('_id', -1)
+    )
+
     return jsonify(logs)
 
 # ---------------- DEVICE ROUTE ----------------
 
 @app.route("/device_alarms", methods=["GET"])
 def device_alarms():
+
     user_email = request.args.get("email")
 
     if not user_email:
@@ -238,15 +241,21 @@ def device_alarms():
 
     alarms = []
 
-    user_slots = slots_col.find({'user_email': user_email})
+    inventory = inventory_col.find_one({'user_email': user_email})
 
-    for slot in user_slots:
-        for sched in slot.get('schedule', []):
+    if not inventory:
+        return jsonify({"alarms": []})
+
+    for slot in inventory['slots']:
+        for sched in slot.get('schedules', []):
             if sched['time'] == current_time:
                 alarms.append({
-                    "slot": slot['slot'],
+                    "slot_number": slot['slot_number'],
                     "dosage": sched['dosage']
                 })
+
+    # Sort by slot number for sequential rotation
+    alarms.sort(key=lambda x: x["slot_number"])
 
     return jsonify({"alarms": alarms})
 
