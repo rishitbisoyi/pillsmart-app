@@ -1,67 +1,138 @@
 body { font-family: 'Inter', sans-serif; }
 .page-hidden { display: none !important; }
 
+/* ---------------- TOAST ---------------- */
+
 #toast {
-    position: fixed; top: 1.5rem; right: 1.5rem; padding: 1rem 1.5rem;
-    border-radius: 0.5rem; font-weight: 500; color: white; z-index: 1000;
-    opacity: 0; transform: translateY(-20px); transition: opacity 0.3s ease, transform 0.3s ease;
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    color: white;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-#toast.show { opacity: 1; transform: translateY(0); }
+#toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
 
-.login-container { display: flex; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); }
+/* ---------------- LOGIN ---------------- */
+
+.login-container {
+    display: flex;
+    background-color: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
 .login-left-panel {
-    width: 40%; 
-    color: black; 
-    display: flex; flex-direction: column; justify-content: space-between; padding: 2.5rem;
-    position: relative; 
-    background-image: url('login-bg.png'); 
-    background-size: cover; background-position: center;
+    width: 40%;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2.5rem;
+    position: relative;
+    background-image: url('login-bg.png');
+    background-size: cover;
+    background-position: center;
 }
-.login-left-panel::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.8) 100%); z-index: 1; }
+
+.login-left-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom,
+        rgba(255,255,255,0.4) 0%,
+        rgba(255,255,255,0.8) 100%);
+    z-index: 1;
+}
+
 .login-left-content { z-index: 2; }
-.login-right-panel { width: 60%; padding: 3rem; display: flex; flex-direction: column; justify-content: center; }
 
-.main-app-header { background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 30; }
-.top-nav-link { padding: 0.75rem 1.25rem; color: #4B5563; font-weight: 500; border-radius: 0.5rem; transition: all 0.2s ease-in-out; cursor: pointer; }
-.top-nav-link:hover { background-color: #F3F4F6; color: #111827; }
-.top-nav-link.active { color: #0d9488; background-color: #f0fdfa; }
-
-.progress-donut { width: 100px; height: 100px; border-radius: 50%; display: grid; place-items: center; font-weight: bold; font-size: 1.25rem; background: conic-gradient(var(--progress-color, #22c55e) var(--progress-value, 0%), #e5e7eb 0%); position: relative; }
-.progress-donut::before { content: ''; position: absolute; width: 80px; height: 80px; background: white; border-radius: 50%; }
-.progress-donut-label { position: relative; z-index: 2; }
-
-.dashboard-card { background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.2s ease-in-out; }
-.dashboard-card:hover { transform: translateY(-3px); }
-
-input[type="text"], input[type="email"], input[type="password"], input[type="time"], input[type="number"], textarea, .custom-select { 
-    border-radius: 8px; padding: 10px 14px; border: 1px solid #D1D5DB; width: 100%; transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; background-color: #FFFFFF; color: #111827; 
+.login-right-panel {
+    width: 60%;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
-input:focus, .custom-select:focus { border-color: #20B2AA; box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.2); outline: none; }
+
+/* ---------------- MAIN APP ---------------- */
+
+.main-app-header {
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+
+.dashboard-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* ---------------- FORM INPUTS ---------------- */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="time"],
+input[type="number"],
+textarea,
 .custom-select {
-    appearance: none; -webkit-appearance: none; -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25em 1.25em; padding-right: 2.5rem; 
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 1px solid #D1D5DB;
+    width: 100%;
+    transition: border-color 0.2s ease-in-out,
+                box-shadow 0.2s ease-in-out;
+    background-color: #FFFFFF;
+    color: #111827;
 }
 
-button.primary-btn { background-color: #20B2AA; color: white; font-weight: 600; padding: 12px 20px; border-radius: 8px; transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; box-shadow: 0 4px 10px rgba(32, 178, 170, 0.3); cursor: pointer; }
-button.primary-btn:hover { background-color: #179C93; box-shadow: 0 6px 15px rgba(32, 178, 170, 0.4); }
-button { cursor: pointer; }
-
-img[onerror] { display: inline-block; background-color: #e2e8f0; color: #64748b; text-align: center; font-weight: 600; font-size: 0.75rem; line-height: 1; justify-content: center; align-items: center; }
-
-input:checked ~ .block { background-color: #0d9488 !important; }
-input:checked ~ .dot { transform: translateX(100%); }
-
-.input-error { 
-    border-color: #ef4444 !important; 
-    background-color: #fef2f2 !important; 
+input:focus,
+.custom-select:focus {
+    border-color: #20B2AA;
+    box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.2);
+    outline: none;
 }
-.input-error:focus { 
-    border-color: #ef4444 !important; 
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important; 
+
+/* ---------------- BUTTONS ---------------- */
+
+button.primary-btn {
+    background-color: #20B2AA;
+    color: white;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 10px rgba(32, 178, 170, 0.3);
+    cursor: pointer;
 }
-/* ---------------- SLOT SCHEDULING SYSTEM ---------------- */
+
+button.primary-btn:hover {
+    background-color: #179C93;
+    box-shadow: 0 6px 15px rgba(32, 178, 170, 0.4);
+}
+
+/* ---------------- DISPENSER MANAGER ---------------- */
 
 .slot-card {
     transition: all 0.2s ease-in-out;
@@ -71,6 +142,19 @@ input:checked ~ .dot { transform: translateX(100%); }
     box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
+/* Tablet count highlight */
+.tablet-count {
+    font-weight: bold;
+    color: #0d9488;
+}
+
+/* Low stock warning */
+.low-stock {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* Schedule container */
 .schedule-container {
     margin-top: 8px;
 }
@@ -81,11 +165,7 @@ input:checked ~ .dot { transform: translateX(100%); }
     align-items: center;
 }
 
-.schedule-container input[type="time"],
-.schedule-container input[type="number"] {
-    flex: 1;
-}
-
+/* Remove time button */
 .remove-time {
     background-color: #fef2f2;
     border: 1px solid #fecaca;
@@ -100,6 +180,7 @@ input:checked ~ .dot { transform: translateX(100%); }
     color: #dc2626;
 }
 
+/* Add time button */
 .add-time-btn {
     font-weight: 500;
 }
@@ -108,7 +189,20 @@ input:checked ~ .dot { transform: translateX(100%); }
     text-decoration: underline;
 }
 
-/* Improve slot spacing on small screens */
+/* ---------------- ERROR STATE ---------------- */
+
+.input-error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+
+.input-error:focus {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* ---------------- RESPONSIVE ---------------- */
+
 @media (max-width: 768px) {
     .dashboard-card {
         padding: 18px;
