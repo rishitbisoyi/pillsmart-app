@@ -61,3 +61,56 @@ input:checked ~ .dot { transform: translateX(100%); }
     border-color: #ef4444 !important; 
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important; 
 }
+/* ---------------- SLOT SCHEDULING SYSTEM ---------------- */
+
+.slot-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.slot-card:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.schedule-container {
+    margin-top: 8px;
+}
+
+.schedule-container > div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.schedule-container input[type="time"],
+.schedule-container input[type="number"] {
+    flex: 1;
+}
+
+.remove-time {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+}
+
+.remove-time:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.add-time-btn {
+    font-weight: 500;
+}
+
+.add-time-btn:hover {
+    text-decoration: underline;
+}
+
+/* Improve slot spacing on small screens */
+@media (max-width: 768px) {
+    .dashboard-card {
+        padding: 18px;
+    }
+}
