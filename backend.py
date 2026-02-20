@@ -16,26 +16,21 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "my_secret_key_change_this")
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.config['SECRET_KEY'] = SECRET_KEY
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
 CORS(app)
 bcrypt = Bcrypt(app)
 
 # ---------------- DATABASE CONNECTION ----------------
 
-try:
-    client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
-    db = client['medicine_dispenser_db']
-    medicines_col = db['schedules']
-    logs_col = db['logs']
-    users_col = db['users']
-    inventory_col = db['inventory']
-    print("✓ Successfully connected to MongoDB!")
-except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-    client = None
+client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
+db = client['medicine_dispenser_db']
 
-# ---------------- JWT AUTH DECORATOR ----------------
+users_col = db['users']
+slots_col = db['slots']
+logs_col = db['logs']
+
+print("✓ MongoDB Connected")
+
+# ---------------- JWT DECORATOR ----------------
 
 def token_required(f):
     @wraps(f)
@@ -50,33 +45,19 @@ def token_required(f):
                 token = auth_header
 
         if not token:
-            return jsonify({'message': 'Token is missing!'}), 401
+            return jsonify({'message': 'Token missing'}), 401
 
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             current_user = users_col.find_one({'email': data['email']})
             if not current_user:
-                return jsonify({'message': 'User not found!'}), 401
-        except Exception as e:
-            return jsonify({'message': 'Token is invalid!', 'error': str(e)}), 401
+                return jsonify({'message': 'User not found'}), 401
+        except:
+            return jsonify({'message': 'Invalid token'}), 401
 
         return f(current_user, *args, **kwargs)
 
     return decorated
-
-# ---------------- TIME CONVERSION ----------------
-
-def convert_to_24h(time_str):
-    try:
-        return datetime.datetime.strptime(time_str.strip(), "%I:%M %p").strftime("%H:%M")
-    except ValueError:
-        return time_str
-
-def convert_to_12h(time_24h):
-    try:
-        return datetime.datetime.strptime(time_24h.strip(), "%H:%M").strftime("%I:%M %p")
-    except:
-        return time_24h
 
 # ---------------- BASIC ROUTE ----------------
 
@@ -84,27 +65,26 @@ def convert_to_12h(time_24h):
 def serve_index():
     return send_from_directory('.', 'index.html')
 
-# ---------------- AUTH ROUTES ----------------
+# ---------------- AUTH ----------------
 
 @app.route("/register", methods=["POST"])
 def register_user():
     data = request.json
 
     if users_col.find_one({'email': data['email']}):
-        return jsonify({"success": False, "error": "Email already exists"}), 400
+        return jsonify({"success": False, "error": "Email exists"}), 400
 
     hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
 
     users_col.insert_one({
         'name': data['name'],
         'email': data['email'],
-        'phone': data.get('phone', ''),
         'password': hashed_pw,
         'profile_pic': '',
         'custom_ringtone': ''
     })
 
-    return jsonify({"success": True, "message": "Registered successfully"})
+    return jsonify({"success": True})
 
 
 @app.route("/login", methods=["POST"])
@@ -119,10 +99,8 @@ def login_user():
         return jsonify({"success": False, "error": "Incorrect password"}), 401
 
     token = jwt.encode(
-        {
-            'email': user['email'],
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
-        },
+        {'email': user['email'],
+         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)},
         app.config['SECRET_KEY'],
         algorithm="HS256"
     )
@@ -134,45 +112,6 @@ def login_user():
         "name": user['name']
     })
 
-
-@app.route("/reset_password", methods=["POST"])
-def reset_password():
-    data = request.json
-    email = data.get('email')
-    new_password = data.get('new_password')
-
-    if not email or not new_password:
-        return jsonify({"success": False, "error": "Missing email or password"}), 400
-
-    user = users_col.find_one({'email': email})
-    if not user:
-        return jsonify({"success": False, "error": "Email not found"}), 404
-
-    hashed_pw = bcrypt.generate_password_hash(new_password).decode('utf-8')
-    users_col.update_one({'email': email}, {'$set': {'password': hashed_pw}})
-
-    return jsonify({"success": True, "message": "Password updated successfully"})
-
-
-@app.route("/change_password", methods=["POST"])
-@token_required
-def change_password(current_user):
-    data = request.json
-    curr_pass = data.get('current_password')
-    new_pass = data.get('new_password')
-
-    if not curr_pass or not new_pass:
-        return jsonify({"success": False, "error": "Missing fields"}), 400
-
-    if not bcrypt.check_password_hash(current_user['password'], curr_pass):
-        return jsonify({"success": False, "error": "Incorrect current password"}), 401
-
-    hashed_pw = bcrypt.generate_password_hash(new_pass).decode('utf-8')
-    users_col.update_one({'email': current_user['email']}, {'$set': {'password': hashed_pw}})
-
-    return jsonify({"success": True, "message": "Password changed successfully"})
-
-
 # ---------------- PROFILE ----------------
 
 @app.route("/get_profile", methods=["GET"])
@@ -181,7 +120,6 @@ def get_profile(current_user):
     return jsonify({
         "name": current_user.get("name"),
         "email": current_user.get("email"),
-        "phone": current_user.get("phone", ""),
         "profile_pic": current_user.get("profile_pic", ""),
         "custom_ringtone": current_user.get("custom_ringtone", "")
     })
@@ -195,150 +133,99 @@ def update_profile(current_user):
 
     if 'name' in data:
         update_data['name'] = data['name']
-    if 'phone' in data:
-        update_data['phone'] = data['phone']
     if 'profile_pic' in data:
         update_data['profile_pic'] = data['profile_pic']
     if 'custom_ringtone' in data:
         update_data['custom_ringtone'] = data['custom_ringtone']
 
     users_col.update_one({'email': current_user['email']}, {'$set': update_data})
-
     return jsonify({"success": True})
 
+# ---------------- SLOT SYSTEM ----------------
 
-# ---------------- MEDICINES ----------------
+def create_empty_slots(user_email):
+    slots = []
+    for i in range(1, 9):
+        slots.append({
+            "slot": i,
+            "medicine_name": "",
+            "total_tablets": 0,
+            "tablets_left": 0,
+            "schedule": [],
+            "user_email": user_email
+        })
+    slots_col.insert_many(slots)
 
-@app.route("/get_all_medicines", methods=["GET"])
+
+@app.route("/get_slots", methods=["GET"])
 @token_required
-def get_medicines(current_user):
-    medicines = []
+def get_slots(current_user):
 
-    for med in medicines_col.find({'user_email': current_user['email']}):
-        med['_id'] = str(med['_id'])
-        med['time'] = convert_to_12h(med['time'])
-        medicines.append(med)
+    user_slots = list(slots_col.find({'user_email': current_user['email']}, {'_id': 0}))
 
-    return jsonify(medicines)
+    if not user_slots:
+        create_empty_slots(current_user['email'])
+        user_slots = list(slots_col.find({'user_email': current_user['email']}, {'_id': 0}))
+
+    return jsonify(user_slots)
 
 
-@app.route("/add_medicine", methods=["POST"])
+@app.route("/update_slot", methods=["POST"])
 @token_required
-def add_medicine_route(current_user):
+def update_slot(current_user):
     data = request.json
-    time_24h = convert_to_24h(data['time'])
 
-    if medicines_col.find_one({'name': data['name'], 'user_email': current_user['email']}):
-        return jsonify({"success": False, "error": "Medicine already exists"})
+    slot_number = int(data['slot'])
 
-    medicines_col.insert_one({
-        'name': data['name'],
-        'dosage': data['dosage'],
-        'time': time_24h,
-        'status': 'Pending',
-        'user_email': current_user['email']
-    })
-
-    return jsonify({"success": True})
-
-
-@app.route("/delete_medicine", methods=["POST"])
-@token_required
-def delete_medicine_route(current_user):
-    medicines_col.delete_one({
-        'name': request.json['name'],
-        'user_email': current_user['email']
-    })
+    slots_col.update_one(
+        {'slot': slot_number, 'user_email': current_user['email']},
+        {'$set': {
+            'medicine_name': data.get('medicine_name', ''),
+            'total_tablets': data.get('total_tablets', 0),
+            'tablets_left': data.get('total_tablets', 0),
+            'schedule': data.get('schedule', [])
+        }}
+    )
 
     return jsonify({"success": True})
 
-
-# ---------------- LOGS ----------------
+# ---------------- DISPENSE LOGIC ----------------
 
 @app.route("/log_dispense", methods=["POST"])
 @token_required
-def log_dispense_route(current_user):
+def log_dispense(current_user):
     data = request.json
 
-    medicines_col.update_one(
-        {'name': data['name'], 'user_email': current_user['email']},
-        {'$set': {'status': data['status']}}
-    )
+    slot_number = int(data['slot'])
+    dosage = int(data['dosage'])
 
-    logs_col.insert_one({
-        'medicine': data['name'],
-        'time': datetime.datetime.now().strftime("%Y-%m-%d %I:%M %p"),
-        'status': data['status'],
-        'user_email': current_user['email']
-    })
+    slot = slots_col.find_one({'slot': slot_number, 'user_email': current_user['email']})
+
+    if slot and slot['tablets_left'] >= dosage:
+        new_count = slot['tablets_left'] - dosage
+
+        slots_col.update_one(
+            {'slot': slot_number, 'user_email': current_user['email']},
+            {'$set': {'tablets_left': new_count}}
+        )
+
+        logs_col.insert_one({
+            'slot': slot_number,
+            'dosage': dosage,
+            'time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            'user_email': current_user['email']
+        })
 
     return jsonify({"success": True})
 
 
 @app.route("/get_logs", methods=["GET"])
 @token_required
-def get_logs_route(current_user):
-    logs = []
-
-    for log in logs_col.find({'user_email': current_user['email']}).sort('_id', -1):
-        log['_id'] = str(log['_id'])
-        logs.append(log)
-
+def get_logs(current_user):
+    logs = list(logs_col.find({'user_email': current_user['email']}, {'_id': 0}).sort('_id', -1))
     return jsonify(logs)
 
-
-# ---------------- INVENTORY ----------------
-
-@app.route("/get_inventory", methods=["GET"])
-@token_required
-def get_inventory(current_user):
-    user_inv = inventory_col.find_one({'user_email': current_user['email']})
-
-    if user_inv:
-        return jsonify(user_inv['slots'])
-    else:
-        return jsonify([
-            {"slot": i, "name": "Empty", "dosePerDay": "-", "tabletsLeft": "-", "refillDate": "-", "food": "-"}
-            for i in range(1, 9)
-        ])
-
-
-@app.route("/update_inventory", methods=["POST"])
-@token_required
-def update_inventory(current_user):
-    data = request.json
-    slot_num = int(data['slot'])
-
-    user_inv = inventory_col.find_one({'user_email': current_user['email']})
-
-    if not user_inv:
-        slots = [
-            {"slot": i, "name": "Empty", "dosePerDay": "-", "tabletsLeft": "-", "refillDate": "-", "food": "-"}
-            for i in range(1, 9)
-        ]
-        slots[slot_num - 1] = data
-
-        inventory_col.insert_one({
-            'user_email': current_user['email'],
-            'slots': slots
-        })
-    else:
-        current_slots = user_inv['slots']
-
-        for i, s in enumerate(current_slots):
-            if s['slot'] == slot_num:
-                current_slots[i] = data
-                break
-
-        inventory_col.update_one(
-            {'user_email': current_user['email']},
-            {'$set': {'slots': current_slots}}
-        )
-
-    return jsonify({"success": True})
-
-
-# ---------------- DEVICE ROUTE (ESP8266) ----------------
+# ---------------- DEVICE ROUTE ----------------
 
 @app.route("/device_alarms", methods=["GET"])
 def device_alarms():
@@ -347,18 +234,23 @@ def device_alarms():
     if not user_email:
         return jsonify({"error": "Email required"}), 400
 
+    current_time = datetime.datetime.now().strftime("%H:%M")
+
     alarms = []
 
-    for med in medicines_col.find(
-        {"user_email": user_email},
-        {"_id": 0, "time": 1}
-    ):
-        alarms.append(med["time"])
+    user_slots = slots_col.find({'user_email': user_email})
+
+    for slot in user_slots:
+        for sched in slot.get('schedule', []):
+            if sched['time'] == current_time:
+                alarms.append({
+                    "slot": slot['slot'],
+                    "dosage": sched['dosage']
+                })
 
     return jsonify({"alarms": alarms})
 
-
-# ---------------- RUN SERVER ----------------
+# ---------------- RUN ----------------
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
