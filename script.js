@@ -1,15 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     const BACKEND_URL = '';
-    const DEFAULT_RINGTONE_URL = "alarm.mp3";
 
     let slots = [];
     let logs = [];
-    let userDetails = { name:"", email:"", phone:"", profile_pic:"", custom_ringtone:"" };
     let activePage = "dashboard";
 
     const authPage = document.getElementById("authPage");
     const appContainer = document.getElementById("appContainer");
+
+    const loginFormContainer = document.getElementById("login-form-container");
+    const signupFormContainer = document.getElementById("signup-form-container");
+    const forgotPasswordContainer = document.getElementById("forgot-password-container");
 
     const getToken = () =>
         localStorage.getItem("authToken") ||
@@ -34,8 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showToast(msg,type="success"){
         const t=document.getElementById("toast");
         t.textContent=msg;
-        t.className=`bg-${type==="success"?"teal":"red"}-500 show`;
-        setTimeout(()=>t.classList.remove("show"),3000);
+        t.className=`fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg z-50 bg-${type==="success"?"teal":"red"}-500`;
+        t.classList.remove("hidden");
+        setTimeout(()=>t.classList.add("hidden"),3000);
     }
 
     /* ================= AUTH ================= */
@@ -58,107 +61,116 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
     }
 
-    /* ================= DASHBOARD ================= */
+    /* ================= NAVIGATION ================= */
 
-    function renderDashboard(){
-        const active = slots.filter(s=>s.medicine_name).length;
-        const totalTablets = slots.reduce((sum,s)=>sum+s.tablets_left,0);
+    const navItems = [
+        {id:"dashboard",name:"Dashboard"},
+        {id:"schedule",name:"Dispenser Manager"},
+        {id:"logs",name:"Logs"}
+    ];
 
-        return `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="dashboard-card">
-                <h3 class="text-lg font-semibold">Active Slots</h3>
-                <p class="text-3xl font-bold text-teal-600">${active}/8</p>
-            </div>
-            <div class="dashboard-card">
-                <h3 class="text-lg font-semibold">Total Tablets Left</h3>
-                <p class="text-3xl font-bold text-blue-600">${totalTablets}</p>
-            </div>
-        </div>`;
+    function renderNav(){
+        const sidebar=document.getElementById("sidebar-nav");
+        const bottom=document.getElementById("bottom-nav");
+
+        sidebar.innerHTML="";
+        bottom.innerHTML="";
+
+        navItems.forEach(item=>{
+            sidebar.innerHTML+=`
+                <a href="#" class="block px-6 py-3 hover:bg-gray-100 ${activePage===item.id?"font-bold text-teal-600":""}"
+                   data-page="${item.id}">
+                   ${item.name}
+                </a>`;
+            bottom.innerHTML+=`
+                <a href="#" class="flex-1 text-center py-2 ${activePage===item.id?"text-teal-600":"text-gray-500"}"
+                   data-page="${item.id}">
+                   ${item.name}
+                </a>`;
+        });
     }
-
-    /* ================= DISPENSER MANAGER ================= */
-
-    function renderSlots(){
-        return `
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        ${slots.map(s=>`
-            <div class="dashboard-card p-5">
-                <h3 class="font-bold text-lg mb-2">Slot ${s.slot_number}</h3>
-                <p><b>Medicine:</b> ${s.medicine_name || "Empty"}</p>
-                <p><b>Tablets:</b> ${s.tablets_left}/${s.total_tablets}</p>
-                <div class="mt-3">
-                    <b>Schedules:</b>
-                    ${s.schedules.length ?
-                        s.schedules.map(sc=>`
-                            <div class="text-sm text-gray-600">
-                                ${sc.time} → ${sc.dosage} tab
-                            </div>`).join('')
-                        : `<div class="text-gray-400 text-sm">No schedules</div>`}
-                </div>
-                <div class="mt-4 flex gap-2">
-                    <button class="edit-slot bg-blue-500 text-white px-3 py-1 rounded"
-                        data-slot="${s.slot_number}">Edit</button>
-                    <button class="clear-slot bg-red-500 text-white px-3 py-1 rounded"
-                        data-slot="${s.slot_number}">Clear</button>
-                </div>
-            </div>
-        `).join('')}
-        </div>`;
-    }
-
-    /* ================= LOGS ================= */
-
-    function renderLogs(){
-        return `
-        <div class="dashboard-card">
-            <h2 class="text-xl font-bold mb-4">Dispense Logs</h2>
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b bg-gray-50">
-                        <th class="p-2">Time</th>
-                        <th class="p-2">Slot</th>
-                        <th class="p-2">Medicine</th>
-                        <th class="p-2">Dosage</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${logs.map(l=>`
-                        <tr class="border-b">
-                            <td class="p-2">${l.time}</td>
-                            <td class="p-2">${l.slot_number}</td>
-                            <td class="p-2">${l.medicine_name}</td>
-                            <td class="p-2">${l.dosage}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>`;
-    }
-
-    /* ================= NAV ================= */
 
     function showPage(id){
         activePage=id;
+        document.getElementById("page-title").textContent =
+            navItems.find(n=>n.id===id)?.name || "Dashboard";
+
         let content="";
-        if(id==="dashboard") content=renderDashboard();
-        if(id==="schedule") content=renderSlots();
-        if(id==="logs") content=renderLogs();
+        if(id==="dashboard"){
+            const active = slots.filter(s=>s.medicine_name).length;
+            const total = slots.reduce((sum,s)=>sum+s.tablets_left,0);
+            content=`
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="dashboard-card">
+                        <h3 class="text-lg font-semibold">Active Slots</h3>
+                        <p class="text-3xl font-bold text-teal-600">${active}/8</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3 class="text-lg font-semibold">Total Tablets Left</h3>
+                        <p class="text-3xl font-bold text-blue-600">${total}</p>
+                    </div>
+                </div>`;
+        }
+
+        if(id==="schedule"){
+            content=`
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${slots.map(s=>`
+                <div class="dashboard-card p-5">
+                    <h3 class="font-bold text-lg mb-2">Slot ${s.slot_number}</h3>
+                    <p><b>Medicine:</b> ${s.medicine_name || "Empty"}</p>
+                    <p><b>Tablets:</b> ${s.tablets_left}/${s.total_tablets}</p>
+                    <div class="mt-3">
+                        ${s.schedules.map(sc=>`
+                            <div class="text-sm">${sc.time} → ${sc.dosage}</div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <button class="edit-slot bg-blue-500 text-white px-3 py-1 rounded"
+                            data-slot="${s.slot_number}">Edit</button>
+                        <button class="clear-slot bg-red-500 text-white px-3 py-1 rounded"
+                            data-slot="${s.slot_number}">Clear</button>
+                    </div>
+                </div>
+            `).join('')}
+            </div>`;
+        }
+
+        if(id==="logs"){
+            content=`
+            <div class="dashboard-card">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr><th>Time</th><th>Slot</th><th>Medicine</th><th>Dosage</th></tr>
+                    </thead>
+                    <tbody>
+                        ${logs.map(l=>`
+                            <tr>
+                                <td>${l.time}</td>
+                                <td>${l.slot_number}</td>
+                                <td>${l.medicine_name}</td>
+                                <td>${l.dosage}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        }
+
         document.getElementById("page-content").innerHTML=content;
+        renderNav();
     }
 
-    /* ================= DATA LOAD ================= */
+    /* ================= DATA ================= */
 
     async function refresh(){
         if(!getToken()) return;
-        const [s,l,p]=await Promise.all([
+        const [s,l]=await Promise.all([
             api("/get_slots"),
-            api("/get_logs"),
-            api("/get_profile")
+            api("/get_logs")
         ]);
         slots=Array.isArray(s)?s:[];
         logs=Array.isArray(l)?l:[];
-        if(p.email) userDetails=p;
         showPage(activePage);
     }
 
@@ -178,6 +190,30 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.addEventListener("click",async e=>{
 
         if(e.target.closest("#logout-btn")) logout();
+
+        if(e.target.closest("[data-page]")){
+            e.preventDefault();
+            showPage(e.target.closest("[data-page]").dataset.page);
+        }
+
+        if(e.target.closest("#show-signup-link")){
+            e.preventDefault();
+            loginFormContainer.classList.add("page-hidden");
+            signupFormContainer.classList.remove("page-hidden");
+        }
+
+        if(e.target.closest("#show-login-link") || e.target.closest("#back-to-login-link")){
+            e.preventDefault();
+            signupFormContainer.classList.add("page-hidden");
+            forgotPasswordContainer.classList.add("page-hidden");
+            loginFormContainer.classList.remove("page-hidden");
+        }
+
+        if(e.target.closest("#forgot-password-link")){
+            e.preventDefault();
+            loginFormContainer.classList.add("page-hidden");
+            forgotPasswordContainer.classList.remove("page-hidden");
+        }
 
         const edit=e.target.closest(".edit-slot");
         if(edit){
@@ -230,6 +266,22 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if(res.success){
                 showToast("Registered!");
+                signupFormContainer.classList.add("page-hidden");
+                loginFormContainer.classList.remove("page-hidden");
+            } else showToast(res.error,"error");
+        });
+
+    document.getElementById("reset-password-form")
+        .addEventListener("submit",async e=>{
+            e.preventDefault();
+            const res=await api("/reset_password","POST",{
+                email:document.getElementById("reset-email").value,
+                new_password:document.getElementById("reset-password").value
+            });
+            if(res.success){
+                showToast("Password updated!");
+                forgotPasswordContainer.classList.add("page-hidden");
+                loginFormContainer.classList.remove("page-hidden");
             } else showToast(res.error,"error");
         });
 
