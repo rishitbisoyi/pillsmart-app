@@ -144,7 +144,34 @@ def get_profile(current_user):
         "profile_pic": current_user.get("profile_pic", ""),
         "custom_ringtone": current_user.get("custom_ringtone", "")
     })
+@app.route("/update_profile", methods=["POST"])
+@token_required
+def update_profile(current_user):
+    data = request.json
 
+    update_fields = {}
+
+    if "name" in data:
+        update_fields["name"] = data["name"]
+
+    if "phone" in data:
+        update_fields["phone"] = data["phone"]
+
+    if "profile_pic" in data:
+        update_fields["profile_pic"] = data["profile_pic"]
+
+    if "new_password" in data and data["new_password"]:
+        hashed_pw = bcrypt.generate_password_hash(
+            data["new_password"]
+        ).decode("utf-8")
+        update_fields["password"] = hashed_pw
+
+    users_col.update_one(
+        {"email": current_user["email"]},
+        {"$set": update_fields}
+    )
+
+    return jsonify({"success": True})
 # ---------------- INVENTORY (NEW SLOT SYSTEM) ----------------
 
 def create_empty_slots():
