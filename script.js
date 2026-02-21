@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const authPage = document.getElementById('authPage');
     const appContainer = document.getElementById('appContainer');
+    const loginContainer = document.getElementById('login-form-container');
+    const signupContainer = document.getElementById('signup-form-container');
+    const forgotContainer = document.getElementById('forgot-password-container');
     const pageContent = document.getElementById('page-content');
     const pageTitle = document.getElementById('page-title');
     const avatarDiv = document.getElementById('profile-avatar');
@@ -71,22 +74,68 @@ document.addEventListener('DOMContentLoaded', () => {
         showPage('profile');
     });
 
-    /* ================= NAVIGATION ================= */
+    /* ================= AUTH (UNCHANGED) ================= */
 
-    function updateNav(){
-        const sidebar=document.getElementById('sidebar-nav');
-        const bottom=document.getElementById('bottom-nav');
-        sidebar.innerHTML='';
-        bottom.innerHTML='';
+    document.getElementById('login-form').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const email=document.getElementById('login-email').value;
+        const password=document.getElementById('login-password').value;
+        const remember=document.getElementById('rememberMe').checked;
 
-        navItems.forEach(i=>{
-            const active=i.id===activePage?'bg-teal-50 text-teal-600 font-bold':'text-gray-600 hover:bg-gray-100';
-            sidebar.innerHTML+=`<a href="#" data-page="${i.id}" class="nav-link flex items-center gap-3 px-6 py-3 mx-2 my-1 rounded-lg ${active}">
-                <i class="ph-bold ${i.icon} text-xl"></i>${i.name}</a>`;
-            bottom.innerHTML+=`<a href="#" data-page="${i.id}" class="nav-link flex flex-col items-center flex-1 py-2 ${i.id===activePage?'text-teal-600':'text-gray-500'}">
-                <i class="ph-bold ${i.icon} text-2xl"></i></a>`;
-        });
-    }
+        const res=await apiCall('/login','POST',{email,password});
+        if(res.success){
+            saveAuth(res.token,res.name,res.email,remember);
+            location.reload();
+        } else {
+            showToast(res.error||"Login failed",'error');
+        }
+    });
+
+    document.getElementById('signup-form').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const name=document.getElementById('signup-name').value;
+        const email=document.getElementById('signup-email').value;
+        const password=document.getElementById('signup-password').value;
+
+        const res=await apiCall('/register','POST',{name,email,password});
+        if(res.success){
+            showToast("Registered! Please login.");
+            signupContainer.classList.add('page-hidden');
+            loginContainer.classList.remove('page-hidden');
+        } else showToast(res.error,'error');
+    });
+
+    document.getElementById('reset-password-form').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const email=document.getElementById('reset-email').value;
+        const newPass=document.getElementById('reset-password').value;
+
+        const res=await apiCall('/reset_password','POST',{email,new_password:newPass});
+        if(res.success){
+            showToast("Password updated!");
+            forgotContainer.classList.add('page-hidden');
+            loginContainer.classList.remove('page-hidden');
+        } else showToast(res.error,'error');
+    });
+
+    document.body.addEventListener('click',(e)=>{
+        if(e.target.closest('#show-signup-link')){
+            e.preventDefault();
+            loginContainer.classList.add('page-hidden');
+            signupContainer.classList.remove('page-hidden');
+        }
+        if(e.target.closest('#show-login-link')||e.target.closest('#back-to-login-link')){
+            e.preventDefault();
+            signupContainer.classList.add('page-hidden');
+            forgotContainer.classList.add('page-hidden');
+            loginContainer.classList.remove('page-hidden');
+        }
+        if(e.target.closest('#forgot-password-link')){
+            e.preventDefault();
+            loginContainer.classList.add('page-hidden');
+            forgotContainer.classList.remove('page-hidden');
+        }
+    });
 
     /* ================= PROFILE PAGE ================= */
 
@@ -99,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div>
                 <label class="font-semibold block mb-2">Change Name</label>
                 <input id="prof-name" class="w-full p-2 border rounded"
-                    value="${userDetails.name || ''}">
+                    value="${userDetails.name||''}">
             </div>
 
             <div>
@@ -109,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div>
                 <label class="font-semibold block mb-2">Change Password</label>
-                <input type="password" id="new-password" class="w-full p-2 border rounded mb-2" placeholder="New Password">
+                <input type="password" id="new-password" class="w-full p-2 border rounded" placeholder="New Password">
             </div>
 
             <button id="save-profile-btn" class="primary-btn w-full">Save Changes</button>
@@ -130,39 +179,21 @@ document.addEventListener('DOMContentLoaded', () => {
         pageTitle.textContent=navItems.find(n=>n.id===page)?.name||'PillSmart';
         updateNav();
 
-        if(page==='schedule'){
-            pageContent.innerHTML=`<div class="dashboard-card p-6">Dispenser Manager</div>`;
-        }
-        if(page==='logs'){
-            pageContent.innerHTML=`<div class="dashboard-card p-6">
-                ${dispenseLogs.map(l=>`<div class="border p-2 mb-2 rounded">Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}</div>`).join('')}
-            </div>`;
-        }
-        if(page==='alerts'){
-            pageContent.innerHTML=`<div class="dashboard-card p-6">
-                <button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button>
-            </div>`;
-        }
-        if(page==='dashboard'){
-            pageContent.innerHTML=`<div class="dashboard-card p-6">
-                Welcome ${userDetails.name}
-            </div>`;
-        }
+        if(page==='schedule') pageContent.innerHTML=renderManager();
+        if(page==='logs') pageContent.innerHTML=`<div class="dashboard-card p-6">${dispenseLogs.map(l=>`<div class="border p-2 mb-2 rounded">Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}</div>`).join('')}</div>`;
+        if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
+        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
     }
 
     /* ================= PROFILE SAVE ================= */
 
-    document.body.addEventListener('click', async (e)=>{
+    document.body.addEventListener('click',async(e)=>{
 
         if(e.target.closest('#logout-btn')) performLogout();
-
-        if(e.target.closest('.nav-link')){
-            e.preventDefault();
-            showPage(e.target.closest('.nav-link').dataset.page);
-        }
+        if(e.target.closest('.nav-link')){e.preventDefault();showPage(e.target.closest('.nav-link').dataset.page);}
+        if(e.target.closest('#profile-avatar')) showPage('profile');
 
         if(e.target.id==='save-profile-btn'){
-
             const newName=document.getElementById('prof-name').value;
             const newPassword=document.getElementById('new-password').value;
             const fileInput=document.getElementById('profile-pic-input');
@@ -186,23 +217,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 refreshData();
             }
         }
-
-        if(e.target.id==='test-alert-btn'){
-            new Audio(userDetails.custom_ringtone||DEFAULT_RINGTONE_URL).play();
-        }
     });
 
-    /* ================= DATA ================= */
-
     async function refreshData(){
-        const profile=await apiCall('/get_profile');
+        const [inv,logs,profile]=await Promise.all([
+            apiCall('/get_inventory'),
+            apiCall('/get_logs'),
+            apiCall('/get_profile')
+        ]);
+        slots=Array.isArray(inv)?inv:[];
+        dispenseLogs=Array.isArray(logs)?logs:[];
         if(profile?.name) userDetails=profile;
 
         updateAvatar();
         showPage(activePage);
     }
-
-    /* ================= INIT ================= */
 
     if(getAuthToken()){
         authPage.classList.add('page-hidden');
