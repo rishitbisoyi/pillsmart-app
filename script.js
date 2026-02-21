@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
         {id:'alerts',name:'Alerts',icon:'ph-bell'}
     ];
 
+    /* ================= AUTH ================= */
+
     const getAuthToken = () =>
         localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
@@ -61,6 +63,67 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(()=>t.classList.remove('show'),3000);
     }
 
+    document.getElementById('login-form').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const email=document.getElementById('login-email').value;
+        const password=document.getElementById('login-password').value;
+        const remember=document.getElementById('rememberMe').checked;
+
+        const res=await apiCall('/login','POST',{email,password});
+        if(res.success){
+            saveAuth(res.token,res.name,res.email,remember);
+            location.reload();
+        } else showToast(res.error||"Login failed",'error');
+    });
+
+    document.getElementById('signup-form').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const name=document.getElementById('signup-name').value;
+        const email=document.getElementById('signup-email').value;
+        const password=document.getElementById('signup-password').value;
+
+        const res=await apiCall('/register','POST',{name,email,password});
+        if(res.success){
+            showToast("Registered! Please login.");
+            signupContainer.classList.add('page-hidden');
+            loginContainer.classList.remove('page-hidden');
+        } else showToast(res.error,'error');
+    });
+
+    document.getElementById('reset-password-form').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const email=document.getElementById('reset-email').value;
+        const newPass=document.getElementById('reset-password').value;
+
+        const res=await apiCall('/reset_password','POST',{email,new_password:newPass});
+        if(res.success){
+            showToast("Password updated!");
+            forgotContainer.classList.add('page-hidden');
+            loginContainer.classList.remove('page-hidden');
+        } else showToast(res.error,'error');
+    });
+
+    document.body.addEventListener('click',(e)=>{
+        if(e.target.closest('#show-signup-link')){
+            e.preventDefault();
+            loginContainer.classList.add('page-hidden');
+            signupContainer.classList.remove('page-hidden');
+        }
+        if(e.target.closest('#show-login-link')||e.target.closest('#back-to-login-link')){
+            e.preventDefault();
+            signupContainer.classList.add('page-hidden');
+            forgotContainer.classList.add('page-hidden');
+            loginContainer.classList.remove('page-hidden');
+        }
+        if(e.target.closest('#forgot-password-link')){
+            e.preventDefault();
+            loginContainer.classList.add('page-hidden');
+            forgotContainer.classList.remove('page-hidden');
+        }
+    });
+
+    /* ================= NAVIGATION ================= */
+
     function updateNav(){
         const sidebar=document.getElementById('sidebar-nav');
         const bottom=document.getElementById('bottom-nav');
@@ -78,6 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /* ================= AVATAR ================= */
+
     function updateAvatar(){
         if(!avatarDiv) return;
 
@@ -94,6 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showPage('profile');
         });
     }
+
+    /* ================= PROFILE PAGE ================= */
 
     function renderProfile(){
         return `
@@ -138,22 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
 
-    function showPage(page){
-        activePage=page;
-
-        if(page === 'profile'){
-            pageTitle.textContent = "Profile";
-            pageContent.innerHTML = renderProfile();
-            attachProfileHandlers();
-            return;
-        }
-
-        pageTitle.textContent=navItems.find(n=>n.id===page)?.name||'PillSmart';
-        updateNav();
-
-        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
-    }
-
     function attachProfileHandlers(){
         const preview=document.getElementById('profile-preview');
         const fileInput=document.getElementById('profile-pic-input');
@@ -172,6 +223,24 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    /* ================= PAGE SWITCH ================= */
+
+    function showPage(page){
+        activePage=page;
+
+        if(page === 'profile'){
+            pageTitle.textContent = "Profile";
+            pageContent.innerHTML = renderProfile();
+            attachProfileHandlers();
+            return;
+        }
+
+        pageTitle.textContent=navItems.find(n=>n.id===page)?.name||'PillSmart';
+        updateNav();
+
+        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
     }
 
     document.body.addEventListener('click',async(e)=>{
@@ -204,16 +273,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if(res.success){
                 showToast("Profile Updated Successfully");
                 refreshData();
-            } else {
-                showToast(res.error||"Update failed",'error');
-            }
+            } else showToast(res.error||"Update failed",'error');
         }
     });
 
     async function refreshData(){
-        const [profile]=await Promise.all([
-            apiCall('/get_profile')
-        ]);
+        const profile=await apiCall('/get_profile');
         if(profile?.name) userDetails=profile;
 
         updateAvatar();
