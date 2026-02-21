@@ -17,8 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageTitle = document.getElementById('page-title');
     const avatarDiv = document.getElementById('profile-avatar');
 
-    /* ================= NAV ITEMS (PROFILE REMOVED) ================= */
-
     const navItems = [
         {id:'dashboard',name:'Dashboard',icon:'ph-house'},
         {id:'schedule',name:'Dispenser Manager',icon:'ph-pill'},
@@ -86,8 +84,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateAvatar(){
         if(!avatarDiv) return;
-        const name = userDetails.name || localStorage.getItem('userName') || "U";
-        avatarDiv.textContent = name.charAt(0).toUpperCase();
+
+        if(userDetails.profile_pic){
+            avatarDiv.innerHTML = `<img src="${userDetails.profile_pic}" class="h-10 w-10 rounded-full object-cover">`;
+        } else {
+            const name = userDetails.name || localStorage.getItem('userName') || "U";
+            avatarDiv.textContent = name.charAt(0).toUpperCase();
+        }
     }
 
     if(avatarDiv){
@@ -140,46 +143,35 @@ document.addEventListener('DOMContentLoaded', () => {
         } else showToast(res.error,'error');
     });
 
-    document.body.addEventListener('click',(e)=>{
-        if(e.target.closest('#show-signup-link')){
-            e.preventDefault();
-            loginContainer.classList.add('page-hidden');
-            signupContainer.classList.remove('page-hidden');
-        }
-        if(e.target.closest('#show-login-link')||e.target.closest('#back-to-login-link')){
-            e.preventDefault();
-            signupContainer.classList.add('page-hidden');
-            forgotContainer.classList.add('page-hidden');
-            loginContainer.classList.remove('page-hidden');
-        }
-        if(e.target.closest('#forgot-password-link')){
-            e.preventDefault();
-            loginContainer.classList.add('page-hidden');
-            forgotContainer.classList.remove('page-hidden');
-        }
-    });
-
     /* ================= PROFILE PAGE ================= */
 
     function renderProfile(){
         return `
-        <div class="dashboard-card p-6 max-w-xl space-y-6">
-            <h2 class="text-xl font-bold">Profile Settings</h2>
+        <div class="dashboard-card p-8 max-w-2xl space-y-6">
+
+            <div class="flex flex-col items-center space-y-4">
+
+                <div id="profile-preview"
+                     class="h-28 w-28 rounded-full bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-600 cursor-pointer overflow-hidden shadow">
+
+                     ${userDetails.profile_pic
+                        ? `<img src="${userDetails.profile_pic}" class="h-full w-full object-cover">`
+                        : userDetails.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+
+                <p class="text-sm text-gray-500">Click photo to change</p>
+                <input type="file" id="profile-pic-input" accept="image/*" class="hidden">
+            </div>
 
             <div>
-                <label class="font-semibold block mb-2">Change Name</label>
+                <label class="font-semibold block mb-2">Full Name</label>
                 <input id="prof-name" class="w-full p-2 border rounded"
                     value="${userDetails.name||''}">
             </div>
 
             <div>
-                <label class="font-semibold block mb-2">Change Profile Picture</label>
-                <input type="file" id="profile-pic-input" accept="image/*">
-            </div>
-
-            <div>
-                <label class="font-semibold block mb-2">Change Password</label>
-                <input type="password" id="new-password" class="w-full p-2 border rounded" placeholder="New Password">
+                <label class="font-semibold block mb-2">New Password</label>
+                <input type="password" id="new-password" class="w-full p-2 border rounded" placeholder="Leave empty if unchanged">
             </div>
 
             <button id="save-profile-btn" class="primary-btn w-full">Save Changes</button>
@@ -194,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(page === 'profile'){
             pageTitle.textContent = "Profile";
             pageContent.innerHTML = renderProfile();
+            attachProfileHandlers();
             return;
         }
 
@@ -206,7 +199,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
     }
 
-    /* ================= PROFILE SAVE ================= */
+    function attachProfileHandlers(){
+        const preview=document.getElementById('profile-preview');
+        const fileInput=document.getElementById('profile-pic-input');
+
+        preview.addEventListener('click',()=>fileInput.click());
+
+        fileInput.addEventListener('change',(e)=>{
+            const file=e.target.files[0];
+            if(!file) return;
+
+            const reader=new FileReader();
+            reader.onload=(ev)=>{
+                userDetails.profile_pic=ev.target.result;
+                preview.innerHTML=`<img src="${ev.target.result}" class="h-full w-full object-cover">`;
+                updateAvatar();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 
     document.body.addEventListener('click',async(e)=>{
 
@@ -217,25 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.target.id==='save-profile-btn'){
             const newName=document.getElementById('prof-name').value;
             const newPassword=document.getElementById('new-password').value;
-            const fileInput=document.getElementById('profile-pic-input');
 
-            let payload={name:newName};
+            let payload={
+                name:newName,
+                profile_pic:userDetails.profile_pic
+            };
+
             if(newPassword) payload.new_password=newPassword;
 
-            if(fileInput.files[0]){
-                const reader=new FileReader();
-                reader.onload=async (ev)=>{
-                    payload.profile_pic=ev.target.result;
-                    await apiCall('/update_profile','POST',payload);
-                    showToast("Profile Updated");
-                    refreshData();
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                await apiCall('/update_profile','POST',payload);
-                showToast("Profile Updated");
-                refreshData();
-            }
+            await apiCall('/update_profile','POST',payload);
+            showToast("Profile Updated");
+            refreshData();
         }
     });
 
