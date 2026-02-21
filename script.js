@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const BACKEND_URL = '';
+    const BACKEND_URL = ''; 
     const DEFAULT_RINGTONE_URL = "alarm.mp3";
 
     let slots = [];
@@ -16,11 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const getAuthToken = () => localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
+    /* ================= API ================= */
+
     async function apiCall(endpoint, method='GET', body=null) {
         const token = getAuthToken();
-        const headers = { 
-            'Content-Type': 'application/json', 
-            ...(token ? {'Authorization': `Bearer ${token}`} : {}) 
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         };
 
         const res = await fetch(`${BACKEND_URL}${endpoint}`, {
@@ -32,30 +34,63 @@ document.addEventListener('DOMContentLoaded', () => {
         return await res.json();
     }
 
+    /* ================= AUTH ================= */
+
     function performLogout() {
         localStorage.clear();
         sessionStorage.clear();
         window.location.reload();
     }
 
-    function showToast(msg, type='success') {
-        const t=document.getElementById('toast');
-        t.textContent=msg;
-        t.className=`bg-${type==='success'?'teal':'red'}-500 show`;
-        setTimeout(()=>t.classList.remove('show'),3000);
+    async function login(email, password) {
+        const res = await apiCall('/login', 'POST', { email, password });
+
+        if (res.success) {
+            localStorage.setItem('authToken', res.token);
+            localStorage.setItem('userName', res.name);
+            localStorage.setItem('userEmail', res.email);
+            window.location.reload();
+        } else {
+            showToast(res.error || "Login failed", 'error');
+        }
     }
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        login(
+            document.getElementById('login-email').value,
+            document.getElementById('login-password').value
+        );
+    });
+
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const res = await apiCall('/register', 'POST', {
+            name: document.getElementById('signup-name').value,
+            email: document.getElementById('signup-email').value,
+            password: document.getElementById('signup-password').value
+        });
+
+        if (res.success) {
+            showToast("Registered successfully!");
+            loginFormContainer.classList.remove('page-hidden');
+            signupFormContainer.classList.add('page-hidden');
+        } else {
+            showToast(res.error, 'error');
+        }
+    });
 
     /* ================= DASHBOARD ================= */
 
     const renderDashboard = () => {
-        const usedSlots = slots.filter(s => s.medicine_name).length;
+        const active = slots.filter(s => s.medicine_name).length;
         const totalTablets = slots.reduce((sum, s) => sum + s.tablets_left, 0);
 
         return `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="dashboard-card">
                 <h3 class="text-lg font-semibold">Active Slots</h3>
-                <p class="text-3xl font-bold text-teal-600">${usedSlots} / 8</p>
+                <p class="text-3xl font-bold text-teal-600">${active} / 8</p>
             </div>
             <div class="dashboard-card">
                 <h3 class="text-lg font-semibold">Total Tablets Left</h3>
@@ -78,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="mt-3">
                         <b>Schedules:</b>
                         ${slot.schedules.length > 0
-                            ? slot.schedules.map(s => 
+                            ? slot.schedules.map(s =>
                                 `<div class="text-sm text-gray-600">${s.time} → ${s.dosage} tab</div>`
                               ).join('')
                             : `<div class="text-sm text-gray-400">No schedules</div>`
@@ -103,54 +138,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
         <div class="dashboard-card">
             <h2 class="text-xl font-bold mb-4">Dispense Logs</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="border-b bg-gray-50">
-                            <th class="p-2">Time</th>
-                            <th class="p-2">Slot</th>
-                            <th class="p-2">Medicine</th>
-                            <th class="p-2">Dosage</th>
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b bg-gray-50">
+                        <th class="p-2">Time</th>
+                        <th class="p-2">Slot</th>
+                        <th class="p-2">Medicine</th>
+                        <th class="p-2">Dosage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${dispenseLogs.map(log => `
+                        <tr class="border-b">
+                            <td class="p-2">${log.time}</td>
+                            <td class="p-2">${log.slot_number}</td>
+                            <td class="p-2">${log.medicine_name}</td>
+                            <td class="p-2">${log.dosage}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${dispenseLogs.map(log => `
-                            <tr class="border-b">
-                                <td class="p-2">${log.time}</td>
-                                <td class="p-2">${log.slot_number}</td>
-                                <td class="p-2">${log.medicine_name}</td>
-                                <td class="p-2">${log.dosage}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
+                    `).join('')}
+                </tbody>
+            </table>
         </div>`;
     };
 
     /* ================= NAVIGATION ================= */
 
     const navItems = [
-        {id:'dashboard',name:'Dashboard',icon:'ph-house'},
-        {id:'schedule',name:'Dispenser Manager',icon:'ph-calendar-plus'},
-        {id:'logs',name:'Logs / History',icon:'ph-clipboard-text'}
+        {id:'dashboard',name:'Dashboard'},
+        {id:'schedule',name:'Dispenser Manager'},
+        {id:'logs',name:'Logs / History'}
     ];
-
-    const updateNavs = () => {
-        const sb=document.getElementById('sidebar-nav');
-        sb.innerHTML='';
-        navItems.forEach(i => {
-            const cls = `nav-link flex items-center gap-3 px-6 py-3 mx-2 my-1 rounded-lg ${
-                i.id===activePage ? 'bg-teal-50 text-teal-600 font-bold' : 'text-gray-600 hover:bg-gray-100'
-            }`;
-            sb.innerHTML+=`<a href="#" data-page="${i.id}" class="${cls}">
-                <i class="ph-bold ${i.icon} text-xl"></i>${i.name}</a>`;
-        });
-    };
 
     const showPage = (pid) => {
         activePage = pid;
-        document.getElementById('page-title').textContent = navItems.find(i=>i.id===pid)?.name;
         let content = '';
 
         if(pid==='dashboard') content = renderDashboard();
@@ -158,16 +178,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(pid==='logs') content = renderLogsPage();
 
         document.getElementById('page-content').innerHTML = content;
-        updateNavs();
     };
 
     /* ================= SLOT ACTIONS ================= */
 
     document.body.addEventListener('click', async (e) => {
 
-        if(e.target.closest('#logout-btn')) {
-            performLogout();
-        }
+        if(e.target.closest('#logout-btn')) performLogout();
 
         const nav = e.target.closest('.nav-link');
         if(nav) {
@@ -185,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const schedules = [];
             while(confirm("Add schedule?")) {
-                const time = prompt("Time (HH:MM 24h)");
+                const time = prompt("Time (HH:MM)");
                 const dosage = parseInt(prompt("Dosage tablets"));
                 schedules.push({time, dosage});
             }
@@ -216,13 +233,15 @@ document.addEventListener('DOMContentLoaded', () => {
     async function refreshData() {
         if(!getAuthToken()) return;
 
-        const [s,l] = await Promise.all([
+        const [s,l,p] = await Promise.all([
             apiCall('/get_slots'),
-            apiCall('/get_logs')
+            apiCall('/get_logs'),
+            apiCall('/get_profile')
         ]);
 
         slots = Array.isArray(s) ? s : [];
         dispenseLogs = Array.isArray(l) ? l : [];
+        if(p.email) userDetails = p;
 
         showPage(activePage);
     }
@@ -238,32 +257,12 @@ document.addEventListener('DOMContentLoaded', () => {
         authPage.classList.remove('page-hidden');
     }
 
-    /* ================= LOGIN ================= */
-
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-
-        const res = await apiCall('/login','POST',{email,password});
-        if(res.success) {
-            localStorage.setItem('authToken', res.token);
-            window.location.reload();
-        } else {
-            showToast(res.error,'error');
-        }
-    });
-
-    document.getElementById('signup-form').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const res = await apiCall('/register','POST',{
-            name:document.getElementById('signup-name').value,
-            email:document.getElementById('signup-email').value,
-            password:document.getElementById('signup-password').value
-        });
-        if(res.success) showToast("Registered!");
-        else showToast(res.error,'error');
-    });
+    const showToast = (msg, type='success') => {
+        const t=document.getElementById('toast');
+        t.textContent=msg;
+        t.className=`bg-${type==='success'?'teal':'red'}-500 show`;
+        setTimeout(()=>t.classList.remove('show'),3000);
+    };
 
     if(getAuthToken()) showApp(); else showAuth();
 });
