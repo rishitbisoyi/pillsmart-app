@@ -241,6 +241,24 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNav();
 
         if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
+        if(page==='schedule') pageContent.innerHTML = renderManager();
+
+if(page==='logs') pageContent.innerHTML =
+    `<div class="dashboard-card p-6">
+        ${dispenseLogs.map(l=>`
+            <div class="border p-2 mb-2 rounded">
+                Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}
+            </div>
+        `).join('')}
+     </div>`;
+
+if(page==='alerts') pageContent.innerHTML =
+    `<div class="dashboard-card p-6">
+        <button id="test-alert-btn"
+            class="bg-blue-600 text-white px-4 py-2 rounded">
+            Test Sound
+        </button>
+     </div>`;
     }
 
     document.body.addEventListener('click',async(e)=>{
