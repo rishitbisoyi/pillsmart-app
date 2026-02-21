@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(()=>t.classList.remove('show'),3000);
     }
 
+    /* ================= LOGIN / SIGNUP ================= */
+
     document.getElementById('login-form').addEventListener('submit', async (e)=>{
         e.preventDefault();
         const email=document.getElementById('login-email').value;
@@ -141,7 +143,69 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ================= AVATAR ================= */
+    /* ================= SLOT MANAGER ================= */
+
+    function renderManager(){
+        return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${slots.map(slot=>`
+            <div class="dashboard-card p-5 space-y-3">
+                <h3 class="font-bold text-lg">Slot ${slot.slot_number}</h3>
+
+                <input data-slot="${slot.slot_number}" 
+                    class="slot-name w-full p-2 border rounded"
+                    placeholder="Medicine Name" 
+                    value="${slot.medicine_name||''}">
+
+                <div class="flex gap-2">
+                    <input data-slot="${slot.slot_number}" 
+                        type="number" 
+                        class="slot-total w-1/2 p-2 border rounded"
+                        placeholder="Total" 
+                        value="${slot.total_tablets||0}">
+
+                    <input data-slot="${slot.slot_number}" 
+                        type="number" 
+                        class="slot-left w-1/2 p-2 border rounded"
+                        placeholder="Left" 
+                        value="${slot.tablets_left||0}">
+                </div>
+
+                <div>
+                    ${slot.schedules.map((sc,i)=>`
+                        <div class="flex justify-between bg-gray-100 p-2 rounded text-sm mb-1">
+                            <span>${sc.time} (${sc.dosage})</span>
+                            <button data-slot="${slot.slot_number}" 
+                                data-index="${i}" 
+                                class="remove-schedule text-red-500">X</button>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="flex gap-2">
+                    <input type="time" 
+                        data-slot="${slot.slot_number}" 
+                        class="new-time border p-1 rounded flex-1">
+
+                    <input type="number" 
+                        data-slot="${slot.slot_number}" 
+                        class="new-dose border p-1 rounded w-20" 
+                        placeholder="Dose">
+
+                    <button data-slot="${slot.slot_number}" 
+                        class="add-schedule bg-teal-500 text-white px-2 rounded">+</button>
+                </div>
+
+                <button data-slot="${slot.slot_number}" 
+                    class="save-slot primary-btn w-full">Save</button>
+
+                <button data-slot="${slot.slot_number}" 
+                    class="clear-slot bg-red-100 text-red-600 w-full py-2 rounded">Clear</button>
+            </div>
+            `).join('')}
+        </div>`;
+    }
+
+    /* ================= PROFILE ================= */
 
     function updateAvatar(){
         if(!avatarDiv) return;
@@ -155,17 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if(avatarDiv){
-        avatarDiv.addEventListener('click', () => {
-            showPage('profile');
-        });
+        avatarDiv.addEventListener('click', () => showPage('profile'));
     }
-
-    /* ================= PROFILE PAGE ================= */
 
     function renderProfile(){
         return `
         <div class="dashboard-card p-8 max-w-2xl space-y-6">
-
             <div class="flex flex-col items-center space-y-4">
                 <div id="profile-preview"
                      class="h-28 w-28 rounded-full bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-600 cursor-pointer overflow-hidden shadow">
@@ -173,56 +232,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? `<img src="${userDetails.profile_pic}" class="h-full w-full object-cover">`
                         : userDetails.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
-                <p class="text-sm text-gray-500">Click photo to change</p>
                 <input type="file" id="profile-pic-input" accept="image/*" class="hidden">
             </div>
 
-            <div>
-                <label class="font-semibold block mb-2">Full Name</label>
-                <input id="prof-name" class="w-full p-2 border rounded"
-                    value="${userDetails.name||''}">
-            </div>
+            <input id="prof-name" class="w-full p-2 border rounded"
+                value="${userDetails.name||''}">
+            <input id="prof-phone" class="w-full p-2 border rounded"
+                value="${userDetails.phone||''}">
+            <input type="password" id="new-password"
+                class="w-full p-2 border rounded" placeholder="New Password">
+            <input type="password" id="confirm-password"
+                class="w-full p-2 border rounded" placeholder="Confirm Password">
 
-            <div>
-                <label class="font-semibold block mb-2">Email</label>
-                <input class="w-full p-2 border rounded bg-gray-100"
-                    value="${userDetails.email||''}" disabled>
-            </div>
-
-            <div>
-                <label class="font-semibold block mb-2">Phone</label>
-                <input id="prof-phone" class="w-full p-2 border rounded"
-                    value="${userDetails.phone||''}">
-            </div>
-
-            <div>
-                <label class="font-semibold block mb-2">New Password</label>
-                <input type="password" id="new-password" class="w-full p-2 border rounded mb-2" placeholder="New Password">
-                <input type="password" id="confirm-password" class="w-full p-2 border rounded" placeholder="Confirm Password">
-            </div>
-
-            <button id="save-profile-btn" class="primary-btn w-full">Save Changes</button>
+            <button id="save-profile-btn" class="primary-btn w-full">
+                Save Changes
+            </button>
         </div>`;
-    }
-
-    function attachProfileHandlers(){
-        const preview=document.getElementById('profile-preview');
-        const fileInput=document.getElementById('profile-pic-input');
-
-        preview.addEventListener('click',()=>fileInput.click());
-
-        fileInput.addEventListener('change',(e)=>{
-            const file=e.target.files[0];
-            if(!file) return;
-
-            const reader=new FileReader();
-            reader.onload=(ev)=>{
-                userDetails.profile_pic=ev.target.result;
-                preview.innerHTML=`<img src="${ev.target.result}" class="h-full w-full object-cover">`;
-                updateAvatar();
-            };
-            reader.readAsDataURL(file);
-        });
     }
 
     /* ================= PAGE SWITCH ================= */
@@ -233,70 +258,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if(page === 'profile'){
             pageTitle.textContent = "Profile";
             pageContent.innerHTML = renderProfile();
-            attachProfileHandlers();
             return;
         }
 
         pageTitle.textContent=navItems.find(n=>n.id===page)?.name||'PillSmart';
         updateNav();
 
-        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
-        if(page==='schedule') pageContent.innerHTML = renderManager();
+        if(page==='dashboard')
+            pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
 
-if(page==='logs') pageContent.innerHTML =
-    `<div class="dashboard-card p-6">
-        ${dispenseLogs.map(l=>`
-            <div class="border p-2 mb-2 rounded">
-                Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}
-            </div>
-        `).join('')}
-     </div>`;
+        if(page==='schedule')
+            pageContent.innerHTML = renderManager();
 
-if(page==='alerts') pageContent.innerHTML =
-    `<div class="dashboard-card p-6">
-        <button id="test-alert-btn"
-            class="bg-blue-600 text-white px-4 py-2 rounded">
-            Test Sound
-        </button>
-     </div>`;
+        if(page==='logs')
+            pageContent.innerHTML=`<div class="dashboard-card p-6">
+                ${dispenseLogs.map(l=>`
+                    <div class="border p-2 mb-2 rounded">
+                        Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}
+                    </div>
+                `).join('')}
+            </div>`;
+
+        if(page==='alerts')
+            pageContent.innerHTML=`<div class="dashboard-card p-6">
+                <button id="test-alert-btn"
+                    class="bg-blue-600 text-white px-4 py-2 rounded">
+                    Test Sound
+                </button>
+            </div>`;
     }
 
-    document.body.addEventListener('click',async(e)=>{
-
-        if(e.target.closest('#logout-btn')) performLogout();
-        if(e.target.closest('.nav-link')){e.preventDefault();showPage(e.target.closest('.nav-link').dataset.page);}
-
-        if(e.target.id==='save-profile-btn'){
-
-            const newName=document.getElementById('prof-name').value;
-            const phone=document.getElementById('prof-phone').value;
-            const newPassword=document.getElementById('new-password').value;
-            const confirmPassword=document.getElementById('confirm-password').value;
-
-            if(newPassword && newPassword !== confirmPassword){
-                showToast("Passwords do not match",'error');
-                return;
-            }
-
-            let payload={
-                name:newName,
-                phone:phone,
-                profile_pic:userDetails.profile_pic
-            };
-
-            if(newPassword) payload.new_password=newPassword;
-
-            const res=await apiCall('/update_profile','POST',payload);
-
-            if(res.success){
-                showToast("Profile Updated Successfully");
-                refreshData();
-            } else showToast(res.error||"Update failed",'error');
-        }
-    });
+    /* ================= DATA LOAD ================= */
 
     async function refreshData(){
-        const profile=await apiCall('/get_profile');
+        const [inv,logs,profile]=await Promise.all([
+            apiCall('/get_inventory'),
+            apiCall('/get_logs'),
+            apiCall('/get_profile')
+        ]);
+
+        slots=Array.isArray(inv)?inv:[];
+        dispenseLogs=Array.isArray(logs)?logs:[];
         if(profile?.name) userDetails=profile;
 
         updateAvatar();
