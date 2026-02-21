@@ -9,18 +9,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <link rel="stylesheet" href="style.css?v=19.0">
+    <!-- Version bumped to 18.0 -->
+    <link rel="stylesheet" href="style.css?v=18.0">
 </head>
 
 <body class="bg-gray-100 font-sans">
 
-    <div id="toast" class="fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg hidden z-50"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="bg-teal-500 fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg hidden z-50"></div>
 
     <!-- ================= AUTH PAGE ================= -->
     <div id="authPage" class="min-h-screen flex items-center justify-center p-4 bg-gray-200">
 
         <div class="login-container w-full max-w-5xl">
 
+            <!-- Left Panel -->
             <div class="login-left-panel relative hidden lg:flex">
                 <div class="login-left-content z-20 flex flex-col justify-between h-full">
                     <div class="flex items-center gap-2">
@@ -35,6 +38,7 @@
                 </div>
             </div>
 
+            <!-- Right Panel -->
             <div class="login-right-panel w-full lg:w-3/5">
 
                 <!-- LOGIN -->
@@ -52,7 +56,13 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                            <input type="password" id="login-password" required>
+                            <div class="relative">
+                                <input type="password" id="login-password" class="pr-10" required>
+                                <button type="button" id="toggle-login-pass"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    <i class="ph-bold ph-eye text-xl"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="flex items-center justify-between text-sm">
@@ -81,6 +91,7 @@
 
                 <!-- SIGNUP -->
                 <div id="signup-form-container" class="max-w-md mx-auto w-full page-hidden">
+
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
 
                     <form id="signup-form" class="space-y-4">
@@ -103,6 +114,7 @@
 
                 <!-- RESET PASSWORD -->
                 <div id="forgot-password-container" class="max-w-md mx-auto w-full page-hidden">
+
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Reset Password</h1>
 
                     <form id="reset-password-form" class="space-y-4">
@@ -134,28 +146,19 @@
                 <span class="text-xl font-bold text-gray-800">PillSmart</span>
             </div>
 
-            <!-- NEW RIGHT SECTION -->
-            <div class="flex items-center gap-6">
-
-                <!-- Avatar -->
-                <div id="profile-avatar"
-                     class="h-10 w-10 rounded-full bg-teal-500 text-white flex items-center justify-center font-bold cursor-pointer">
-                    U
-                </div>
-
-                <!-- Logout -->
-                <button id="logout-btn" class="text-red-600 font-medium">
-                    Logout
-                </button>
-            </div>
+            <button id="logout-btn" class="text-red-600 font-medium">
+                Logout
+            </button>
         </header>
 
         <div class="flex">
 
+            <!-- Sidebar -->
             <aside class="hidden md:flex md:flex-col md:w-64 bg-white shadow-lg">
                 <nav id="sidebar-nav" class="py-4"></nav>
             </aside>
 
+            <!-- Main Content -->
             <main class="flex-1 p-6 pb-24 md:pb-6">
                 <h1 id="page-title" class="text-3xl font-bold text-gray-900 mb-6">
                     Dashboard
@@ -165,11 +168,13 @@
 
         </div>
 
+        <!-- Bottom Nav (Mobile) -->
         <nav id="bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner"></nav>
 
     </div>
 
-    <script src="script.js?v=19.0"></script>
+    <!-- Version bumped to 18.0 -->
+    <script src="script.js?v=18.0"></script>
 
 </body>
 </html>
