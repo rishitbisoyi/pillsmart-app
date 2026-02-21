@@ -61,8 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(()=>t.classList.remove('show'),3000);
     }
 
-    /* ================= NAVIGATION ================= */
-
     function updateNav(){
         const sidebar=document.getElementById('sidebar-nav');
         const bottom=document.getElementById('bottom-nav');
@@ -79,8 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <i class="ph-bold ${i.icon} text-2xl"></i></a>`;
         });
     }
-
-    /* ================= AVATAR ================= */
 
     function updateAvatar(){
         if(!avatarDiv) return;
@@ -99,66 +95,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ================= AUTH ================= */
-
-    document.getElementById('login-form').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const email=document.getElementById('login-email').value;
-        const password=document.getElementById('login-password').value;
-        const remember=document.getElementById('rememberMe').checked;
-
-        const res=await apiCall('/login','POST',{email,password});
-        if(res.success){
-            saveAuth(res.token,res.name,res.email,remember);
-            location.reload();
-        } else {
-            showToast(res.error||"Login failed",'error');
-        }
-    });
-
-    document.getElementById('signup-form').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const name=document.getElementById('signup-name').value;
-        const email=document.getElementById('signup-email').value;
-        const password=document.getElementById('signup-password').value;
-
-        const res=await apiCall('/register','POST',{name,email,password});
-        if(res.success){
-            showToast("Registered! Please login.");
-            signupContainer.classList.add('page-hidden');
-            loginContainer.classList.remove('page-hidden');
-        } else showToast(res.error,'error');
-    });
-
-    document.getElementById('reset-password-form').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const email=document.getElementById('reset-email').value;
-        const newPass=document.getElementById('reset-password').value;
-
-        const res=await apiCall('/reset_password','POST',{email,new_password:newPass});
-        if(res.success){
-            showToast("Password updated!");
-            forgotContainer.classList.add('page-hidden');
-            loginContainer.classList.remove('page-hidden');
-        } else showToast(res.error,'error');
-    });
-
-    /* ================= PROFILE PAGE ================= */
-
     function renderProfile(){
         return `
         <div class="dashboard-card p-8 max-w-2xl space-y-6">
 
             <div class="flex flex-col items-center space-y-4">
-
                 <div id="profile-preview"
                      class="h-28 w-28 rounded-full bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-600 cursor-pointer overflow-hidden shadow">
-
                      ${userDetails.profile_pic
                         ? `<img src="${userDetails.profile_pic}" class="h-full w-full object-cover">`
                         : userDetails.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
-
                 <p class="text-sm text-gray-500">Click photo to change</p>
                 <input type="file" id="profile-pic-input" accept="image/*" class="hidden">
             </div>
@@ -170,15 +117,26 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div>
+                <label class="font-semibold block mb-2">Email</label>
+                <input class="w-full p-2 border rounded bg-gray-100"
+                    value="${userDetails.email||''}" disabled>
+            </div>
+
+            <div>
+                <label class="font-semibold block mb-2">Phone</label>
+                <input id="prof-phone" class="w-full p-2 border rounded"
+                    value="${userDetails.phone||''}">
+            </div>
+
+            <div>
                 <label class="font-semibold block mb-2">New Password</label>
-                <input type="password" id="new-password" class="w-full p-2 border rounded" placeholder="Leave empty if unchanged">
+                <input type="password" id="new-password" class="w-full p-2 border rounded mb-2" placeholder="New Password">
+                <input type="password" id="confirm-password" class="w-full p-2 border rounded" placeholder="Confirm Password">
             </div>
 
             <button id="save-profile-btn" class="primary-btn w-full">Save Changes</button>
         </div>`;
     }
-
-    /* ================= PAGE SWITCH ================= */
 
     function showPage(page){
         activePage=page;
@@ -194,9 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNav();
 
         if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
-        if(page==='schedule') pageContent.innerHTML=`<div class="dashboard-card p-6">Dispenser Manager</div>`;
-        if(page==='logs') pageContent.innerHTML=`<div class="dashboard-card p-6">${dispenseLogs.map(l=>`<div class="border p-2 mb-2 rounded">Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}</div>`).join('')}</div>`;
-        if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
     }
 
     function attachProfileHandlers(){
@@ -223,33 +178,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if(e.target.closest('#logout-btn')) performLogout();
         if(e.target.closest('.nav-link')){e.preventDefault();showPage(e.target.closest('.nav-link').dataset.page);}
-        if(e.target.closest('#profile-avatar')) showPage('profile');
 
         if(e.target.id==='save-profile-btn'){
+
             const newName=document.getElementById('prof-name').value;
+            const phone=document.getElementById('prof-phone').value;
             const newPassword=document.getElementById('new-password').value;
+            const confirmPassword=document.getElementById('confirm-password').value;
+
+            if(newPassword && newPassword !== confirmPassword){
+                showToast("Passwords do not match",'error');
+                return;
+            }
 
             let payload={
                 name:newName,
+                phone:phone,
                 profile_pic:userDetails.profile_pic
             };
 
             if(newPassword) payload.new_password=newPassword;
 
-            await apiCall('/update_profile','POST',payload);
-            showToast("Profile Updated");
-            refreshData();
+            const res=await apiCall('/update_profile','POST',payload);
+
+            if(res.success){
+                showToast("Profile Updated Successfully");
+                refreshData();
+            } else {
+                showToast(res.error||"Update failed",'error');
+            }
         }
     });
 
     async function refreshData(){
-        const [inv,logs,profile]=await Promise.all([
-            apiCall('/get_inventory'),
-            apiCall('/get_logs'),
+        const [profile]=await Promise.all([
             apiCall('/get_profile')
         ]);
-        slots=Array.isArray(inv)?inv:[];
-        dispenseLogs=Array.isArray(logs)?logs:[];
         if(profile?.name) userDetails=profile;
 
         updateAvatar();
