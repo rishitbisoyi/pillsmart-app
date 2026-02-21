@@ -3,285 +3,195 @@ document.addEventListener('DOMContentLoaded', () => {
     const BACKEND_URL = '';
     const DEFAULT_RINGTONE_URL = "alarm.mp3";
 
+    let slots = [];
+    let dispenseLogs = [];
+    let userDetails = { name: "", email: "", phone: "", profile_pic: "", custom_ringtone: "" };
     let activePage = 'dashboard';
-    let inventoryData = null;
 
-    const authPage = document.getElementById('authPage');
-    const appContainer = document.getElementById('appContainer');
+    const getAuthToken = () => localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
-    const getAuthToken = () =>
-        localStorage.getItem('authToken') ||
-        sessionStorage.getItem('authToken');
-
-    // ---------------- API ----------------
-
-    async function apiCall(endpoint, method = 'GET', body = null) {
+    async function apiCall(endpoint, method='GET', body=null) {
         const token = getAuthToken();
-
         const headers = {
             'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            ...(token ? {'Authorization': `Bearer ${token}`} : {})
         };
-
-        try {
-            const res = await fetch(`${BACKEND_URL}${endpoint}`, {
-                method,
-                headers,
-                body: body ? JSON.stringify(body) : null,
-                cache: 'no-store'
-            });
-            return await res.json();
-        } catch (e) {
-            console.error("API Error:", e);
-            return { success: false, error: "Server error" };
-        }
+        const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null,
+            cache: 'no-store'
+        });
+        return await res.json();
     }
 
-    const showToast = (msg, type = 'success') => {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.className = `bg-${type === 'success' ? 'teal' : 'red'}-500 show`;
-        setTimeout(() => t.classList.remove('show'), 3000);
+    /* ====================== DASHBOARD ====================== */
+
+    const renderDashboard = () => {
+        const totalSlotsUsed = slots.filter(s => s.medicine_name).length;
+        const totalTablets = slots.reduce((sum, s) => sum + s.tablets_left, 0);
+
+        return `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="dashboard-card p-6">
+                    <h3 class="text-lg font-semibold mb-2">Active Slots</h3>
+                    <p class="text-3xl font-bold text-teal-600">${totalSlotsUsed} / 8</p>
+                </div>
+                <div class="dashboard-card p-6">
+                    <h3 class="text-lg font-semibold mb-2">Total Tablets Left</h3>
+                    <p class="text-3xl font-bold text-blue-600">${totalTablets}</p>
+                </div>
+            </div>
+        `;
     };
 
-    // ---------------- DASHBOARD ----------------
-
-    const renderDashboard = () => `
-        <div class="dashboard-card p-6 text-center">
-            <h2 class="text-2xl font-bold">Welcome to PillSmart</h2>
-            <p class="text-gray-500 mt-2">Manage your 8-slot smart dispenser.</p>
-        </div>
-    `;
-
-    // ---------------- DISPENSER MANAGER ----------------
+    /* ====================== DISPENSER MANAGER ====================== */
 
     const renderDispenserManager = () => {
 
-        if (!inventoryData) return `<p>Loading...</p>`;
-
         return `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            ${inventoryData.slots.map(slot => `
-                <div class="dashboard-card p-5" data-slot="${slot.slot_number}">
-                    <h2 class="text-xl font-bold text-teal-600 mb-2">
-                        Slot ${slot.slot_number}
-                    </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${slots.map(slot => `
+                    <div class="dashboard-card p-5">
+                        <h3 class="text-lg font-bold mb-2">Slot ${slot.slot_number}</h3>
+                        <p><b>Medicine:</b> ${slot.medicine_name || 'Empty'}</p>
+                        <p><b>Tablets:</b> ${slot.tablets_left} / ${slot.total_tablets}</p>
 
-                    <p class="text-sm text-gray-500 mb-3">
-                        Tablets Left: 
-                        <span class="font-bold">${slot.tablets_left}</span>
-                    </p>
+                        <div class="mt-3">
+                            <b>Schedules:</b>
+                            ${slot.schedules.length > 0 ? slot.schedules.map(s =>
+                                `<div class="text-sm text-gray-600">${s.time} → ${s.dosage} tab</div>`
+                            ).join('') : `<div class="text-sm text-gray-400">No schedules</div>`}
+                        </div>
 
-                    <input type="text"
-                        class="slot-med-name w-full p-2 border rounded mb-2"
-                        value="${slot.medicine_name || ''}"
-                        placeholder="Medicine Name">
+                        <div class="mt-4 flex gap-2 flex-wrap">
+                            <button class="edit-slot-btn bg-blue-500 text-white px-3 py-1 rounded"
+                                data-slot="${slot.slot_number}">Edit</button>
 
-                    <input type="number"
-                        min="0"
-                        class="slot-total w-full p-2 border rounded mb-3"
-                        value="${slot.total_tablets || ''}"
-                        placeholder="Total Tablets">
-
-                    <div class="schedule-container space-y-2 mb-2">
-                        ${slot.schedules.map(s => `
-                            <div class="flex gap-2">
-                                <input type="time"
-                                    class="slot-time p-2 border rounded flex-1"
-                                    value="${s.time}">
-                                <input type="number"
-                                    min="1"
-                                    class="slot-dosage p-2 border rounded flex-1"
-                                    value="${s.dosage}">
-                                <button class="remove-time text-red-500">✕</button>
-                            </div>
-                        `).join('')}
+                            <button class="clear-slot-btn bg-red-500 text-white px-3 py-1 rounded"
+                                data-slot="${slot.slot_number}">Clear</button>
+                        </div>
                     </div>
-
-                    <button class="add-time-btn text-sm text-teal-600 hover:underline mb-2">
-                        + Add Time
-                    </button>
-
-                    <button class="save-slot-btn primary-btn w-full">
-                        Save Slot
-                    </button>
-                </div>
-            `).join('')}
-        </div>
+                `).join('')}
+            </div>
         `;
     };
 
-    // ---------------- LOGS ----------------
+    /* ====================== LOGS ====================== */
 
-    const renderLogsPage = (logsData) => {
-
-        const rows = logsData.map(log => `
-            <tr class="border-b">
-                <td class="py-3 px-4">${log.time}</td>
-                <td class="py-3 px-4">Slot ${log.slot_number}</td>
-                <td class="py-3 px-4">${log.medicine_name}</td>
-                <td class="py-3 px-4">${log.dosage}</td>
-            </tr>
-        `).join('');
-
+    const renderLogs = () => {
         return `
-        <div class="dashboard-card">
-            <h2 class="text-xl font-bold mb-4">Dispense History</h2>
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b-2 bg-gray-50">
-                        <th class="px-4 py-3">Time</th>
-                        <th class="px-4 py-3">Slot</th>
-                        <th class="px-4 py-3">Medicine</th>
-                        <th class="px-4 py-3">Dosage</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rows || `<tr><td colspan="4" class="text-center py-6">No logs</td></tr>`}
-                </tbody>
-            </table>
-        </div>
+            <div class="dashboard-card p-6">
+                <h2 class="text-xl font-bold mb-4">Dispense Logs</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b bg-gray-50">
+                                <th class="p-2">Time</th>
+                                <th class="p-2">Slot</th>
+                                <th class="p-2">Medicine</th>
+                                <th class="p-2">Dosage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${dispenseLogs.map(log => `
+                                <tr class="border-b">
+                                    <td class="p-2">${log.time}</td>
+                                    <td class="p-2">${log.slot_number}</td>
+                                    <td class="p-2">${log.medicine_name}</td>
+                                    <td class="p-2">${log.dosage}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         `;
     };
 
-    // ---------------- NAV ----------------
+    /* ====================== PAGE SWITCH ====================== */
 
-    const navItems = [
-        { id: 'dashboard', name: 'Dashboard', icon: 'ph-house' },
-        { id: 'dispenser', name: 'Dispenser Manager', icon: 'ph-pill' },
-        { id: 'logs', name: 'Logs / History', icon: 'ph-clipboard-text' }
-    ];
+    const showPage = (page) => {
+        activePage = page;
+        const content = document.getElementById('page-content');
 
-    const updateNavs = () => {
-        const sb = document.getElementById('sidebar-nav');
-        sb.innerHTML = '';
-
-        navItems.forEach(i => {
-            sb.innerHTML += `
-                <a href="#" data-page="${i.id}"
-                   class="nav-link flex items-center gap-3 px-6 py-3 mx-2 my-1 rounded-lg
-                   ${i.id === activePage ? 'bg-teal-50 text-teal-600 font-bold'
-                    : 'text-gray-600 hover:bg-gray-100'}">
-                    <i class="ph-bold ${i.icon} text-xl"></i>
-                    ${i.name}
-                </a>`;
-        });
+        if(page === 'dashboard') content.innerHTML = renderDashboard();
+        else if(page === 'dispenser') content.innerHTML = renderDispenserManager();
+        else if(page === 'logs') content.innerHTML = renderLogs();
     };
 
-    // ---------------- PAGE SWITCH ----------------
+    /* ====================== DATA LOAD ====================== */
 
-    const showPage = async (pid) => {
+    async function refreshData() {
+        if(!getAuthToken()) return;
 
-        activePage = pid;
-        let content = '';
+        const [s, l] = await Promise.all([
+            apiCall('/get_slots'),
+            apiCall('/get_logs')
+        ]);
 
-        if (pid === 'dashboard') {
-            content = renderDashboard();
-        }
+        slots = Array.isArray(s) ? s : [];
+        dispenseLogs = Array.isArray(l) ? l : [];
 
-        else if (pid === 'dispenser') {
-            inventoryData = await apiCall('/get_inventory');
-            content = renderDispenserManager();
-        }
-
-        else if (pid === 'logs') {
-            const logs = await apiCall('/get_logs');
-            content = renderLogsPage(Array.isArray(logs) ? logs : []);
-        }
-
-        document.getElementById('page-title').textContent =
-            navItems.find(i => i.id === pid)?.name || "PillSmart";
-
-        document.getElementById('page-content').innerHTML = content;
-        updateNavs();
-
-        if (pid === 'dispenser') {
-
-            document.querySelectorAll('.add-time-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const container =
-                        btn.parentElement.querySelector('.schedule-container');
-
-                    const row = document.createElement('div');
-                    row.className = "flex gap-2";
-                    row.innerHTML = `
-                        <input type="time" class="slot-time p-2 border rounded flex-1">
-                        <input type="number" min="1"
-                               class="slot-dosage p-2 border rounded flex-1"
-                               placeholder="Dosage">
-                        <button class="remove-time text-red-500">✕</button>
-                    `;
-                    container.appendChild(row);
-
-                    row.querySelector('.remove-time')
-                        .addEventListener('click', () => row.remove());
-                });
-            });
-
-            document.querySelectorAll('.save-slot-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-
-                    const card = btn.closest('[data-slot]');
-                    const slot_number = parseInt(card.dataset.slot);
-
-                    const medName =
-                        card.querySelector('.slot-med-name').value;
-
-                    const total =
-                        parseInt(card.querySelector('.slot-total').value) || 0;
-
-                    const schedules = [];
-
-                    card.querySelectorAll('.schedule-container > div')
-                        .forEach(row => {
-
-                            const time =
-                                row.querySelector('.slot-time').value;
-
-                            const dosage =
-                                parseInt(row.querySelector('.slot-dosage').value);
-
-                            if (time && dosage) {
-                                schedules.push({ time, dosage });
-                            }
-                        });
-
-                    await apiCall('/update_slot', 'POST', {
-                        slot_number,
-                        medicine_name: medName,
-                        total_tablets: total,
-                        schedules
-                    });
-
-                    showToast("Slot Updated!");
-                    showPage('dispenser');
-                });
-            });
-        }
-    };
-
-    // ---------------- AUTH ----------------
-
-    function showApp() {
-        authPage.classList.add('page-hidden');
-        appContainer.classList.remove('page-hidden');
-        showPage('dashboard');
+        showPage(activePage);
     }
 
-    function showAuth() {
-        appContainer.classList.add('page-hidden');
-        authPage.classList.remove('page-hidden');
-    }
+    /* ====================== SLOT ACTIONS ====================== */
+
+    document.body.addEventListener('click', async (e) => {
+
+        const editBtn = e.target.closest('.edit-slot-btn');
+        if(editBtn) {
+            const slotNumber = parseInt(editBtn.dataset.slot);
+            const name = prompt("Medicine name:");
+            const total = parseInt(prompt("Total tablets:"));
+            const left = parseInt(prompt("Tablets left:"));
+
+            const schedules = [];
+            while(confirm("Add schedule time?")) {
+                const time = prompt("Time (HH:MM 24h format)");
+                const dosage = parseInt(prompt("Dosage tablets:"));
+                schedules.push({time, dosage});
+            }
+
+            await apiCall('/update_slot', 'POST', {
+                slot_number: slotNumber,
+                medicine_name: name,
+                total_tablets: total,
+                tablets_left: left,
+                schedules: schedules
+            });
+
+            refreshData();
+        }
+
+        const clearBtn = e.target.closest('.clear-slot-btn');
+        if(clearBtn) {
+            const slotNumber = parseInt(clearBtn.dataset.slot);
+            if(confirm("Clear this slot?")) {
+                await apiCall('/clear_slot', 'POST', {slot_number: slotNumber});
+                refreshData();
+            }
+        }
+    });
+
+    /* ====================== NAVIGATION ====================== */
+
+    document.getElementById('sidebar-nav').innerHTML = `
+        <a href="#" data-page="dashboard" class="nav-link block p-3">Dashboard</a>
+        <a href="#" data-page="dispenser" class="nav-link block p-3">Dispenser Manager</a>
+        <a href="#" data-page="logs" class="nav-link block p-3">Logs</a>
+    `;
 
     document.body.addEventListener('click', (e) => {
         const nav = e.target.closest('.nav-link');
-        if (nav) {
+        if(nav) {
             e.preventDefault();
             showPage(nav.dataset.page);
         }
     });
 
-    if (getAuthToken()) showApp();
-    else showAuth();
+    /* ====================== INIT ====================== */
 
+    if(getAuthToken()) refreshData();
 });
