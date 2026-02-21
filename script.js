@@ -63,18 +63,40 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(()=>t.classList.remove('show'),3000);
     }
 
+    /* ================= NAVIGATION ================= */
+
+    function updateNav(){
+        const sidebar=document.getElementById('sidebar-nav');
+        const bottom=document.getElementById('bottom-nav');
+        if(!sidebar || !bottom) return;
+
+        sidebar.innerHTML='';
+        bottom.innerHTML='';
+
+        navItems.forEach(i=>{
+            const active=i.id===activePage?'bg-teal-50 text-teal-600 font-bold':'text-gray-600 hover:bg-gray-100';
+            sidebar.innerHTML+=`<a href="#" data-page="${i.id}" class="nav-link flex items-center gap-3 px-6 py-3 mx-2 my-1 rounded-lg ${active}">
+                <i class="ph-bold ${i.icon} text-xl"></i>${i.name}</a>`;
+            bottom.innerHTML+=`<a href="#" data-page="${i.id}" class="nav-link flex flex-col items-center flex-1 py-2 ${i.id===activePage?'text-teal-600':'text-gray-500'}">
+                <i class="ph-bold ${i.icon} text-2xl"></i></a>`;
+        });
+    }
+
     /* ================= AVATAR ================= */
 
     function updateAvatar(){
+        if(!avatarDiv) return;
         const name = userDetails.name || localStorage.getItem('userName') || "U";
         avatarDiv.textContent = name.charAt(0).toUpperCase();
     }
 
-    avatarDiv.addEventListener('click', () => {
-        showPage('profile');
-    });
+    if(avatarDiv){
+        avatarDiv.addEventListener('click', () => {
+            showPage('profile');
+        });
+    }
 
-    /* ================= AUTH (UNCHANGED) ================= */
+    /* ================= AUTH ================= */
 
     document.getElementById('login-form').addEventListener('submit', async (e)=>{
         e.preventDefault();
@@ -142,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderProfile(){
         return `
         <div class="dashboard-card p-6 max-w-xl space-y-6">
-
             <h2 class="text-xl font-bold">Profile Settings</h2>
 
             <div>
@@ -179,10 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
         pageTitle.textContent=navItems.find(n=>n.id===page)?.name||'PillSmart';
         updateNav();
 
-        if(page==='schedule') pageContent.innerHTML=renderManager();
+        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
+        if(page==='schedule') pageContent.innerHTML=`<div class="dashboard-card p-6">Dispenser Manager</div>`;
         if(page==='logs') pageContent.innerHTML=`<div class="dashboard-card p-6">${dispenseLogs.map(l=>`<div class="border p-2 mb-2 rounded">Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}</div>`).join('')}</div>`;
         if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
-        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
     }
 
     /* ================= PROFILE SAVE ================= */
@@ -199,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const fileInput=document.getElementById('profile-pic-input');
 
             let payload={name:newName};
-
             if(newPassword) payload.new_password=newPassword;
 
             if(fileInput.files[0]){
