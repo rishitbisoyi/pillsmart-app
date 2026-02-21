@@ -22,10 +22,20 @@ body {
     transform: translateY(-20px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
 }
+
 #toast.show { 
     opacity: 1; 
     transform: translateY(0); 
+}
+
+.toast-success {
+    background-color: #20B2AA;
+}
+
+.toast-error {
+    background-color: #ef4444;
 }
 
 /* ================= LOGIN ================= */
@@ -91,7 +101,7 @@ body {
     transform: translateY(-3px);
 }
 
-/* ================= SLOT CARD STYLING ================= */
+/* ================= SLOT STYLING ================= */
 
 .slot-badge {
     padding: 4px 10px;
@@ -113,30 +123,6 @@ body {
 .slot-low {
     background-color: #fef2f2;
     color: #dc2626;
-}
-
-.slot-btn {
-    font-size: 13px;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.slot-btn-edit {
-    background-color: #3b82f6;
-    color: white;
-}
-.slot-btn-edit:hover {
-    background-color: #2563eb;
-}
-
-.slot-btn-clear {
-    background-color: #ef4444;
-    color: white;
-}
-.slot-btn-clear:hover {
-    background-color: #dc2626;
 }
 
 /* ================= INPUTS ================= */
