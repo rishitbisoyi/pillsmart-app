@@ -1,7 +1,13 @@
-body { font-family: 'Inter', sans-serif; }
-.page-hidden { display: none !important; }
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: #f3f4f6;
+}
 
-/* ---------------- TOAST ---------------- */
+.page-hidden { 
+    display: none !important; 
+}
+
+/* ================= TOAST ================= */
 
 #toast {
     position: fixed;
@@ -17,12 +23,12 @@ body { font-family: 'Inter', sans-serif; }
     transition: opacity 0.3s ease, transform 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-#toast.show {
-    opacity: 1;
-    transform: translateY(0);
+#toast.show { 
+    opacity: 1; 
+    transform: translateY(0); 
 }
 
-/* ---------------- LOGIN ---------------- */
+/* ================= LOGIN ================= */
 
 .login-container {
     display: flex;
@@ -34,15 +40,11 @@ body { font-family: 'Inter', sans-serif; }
 
 .login-left-panel {
     width: 40%;
-    color: black;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
     padding: 2.5rem;
-    position: relative;
     background-image: url('login-bg.png');
     background-size: cover;
     background-position: center;
+    position: relative;
 }
 
 .login-left-panel::before {
@@ -65,7 +67,7 @@ body { font-family: 'Inter', sans-serif; }
     justify-content: center;
 }
 
-/* ---------------- MAIN APP ---------------- */
+/* ================= HEADER ================= */
 
 .main-app-header {
     background-color: white;
@@ -75,46 +77,93 @@ body { font-family: 'Inter', sans-serif; }
     z-index: 30;
 }
 
+/* ================= CARDS ================= */
+
 .dashboard-card {
     background-color: white;
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: transform 0.2s ease-in-out;
 }
 
 .dashboard-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
-/* ---------------- FORM INPUTS ---------------- */
+/* ================= SLOT CARD STYLING ================= */
+
+.slot-badge {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.slot-empty {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.slot-active {
+    background-color: #ecfdf5;
+    color: #059669;
+}
+
+.slot-low {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.slot-btn {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.slot-btn-edit {
+    background-color: #3b82f6;
+    color: white;
+}
+.slot-btn-edit:hover {
+    background-color: #2563eb;
+}
+
+.slot-btn-clear {
+    background-color: #ef4444;
+    color: white;
+}
+.slot-btn-clear:hover {
+    background-color: #dc2626;
+}
+
+/* ================= INPUTS ================= */
 
 input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="time"],
 input[type="number"],
-textarea,
-.custom-select {
+textarea {
     border-radius: 8px;
     padding: 10px 14px;
     border: 1px solid #D1D5DB;
     width: 100%;
-    transition: border-color 0.2s ease-in-out,
-                box-shadow 0.2s ease-in-out;
     background-color: #FFFFFF;
     color: #111827;
+    transition: border-color 0.2s ease-in-out,
+                box-shadow 0.2s ease-in-out;
 }
 
-input:focus,
-.custom-select:focus {
+input:focus {
     border-color: #20B2AA;
     box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.2);
     outline: none;
 }
 
-/* ---------------- BUTTONS ---------------- */
+/* ================= PRIMARY BUTTON ================= */
 
 button.primary-btn {
     background-color: #20B2AA;
@@ -122,9 +171,9 @@ button.primary-btn {
     font-weight: 600;
     padding: 12px 20px;
     border-radius: 8px;
-    transition: all 0.2s ease-in-out;
+    transition: background-color 0.2s ease,
+                box-shadow 0.2s ease;
     box-shadow: 0 4px 10px rgba(32, 178, 170, 0.3);
-    cursor: pointer;
 }
 
 button.primary-btn:hover {
@@ -132,64 +181,22 @@ button.primary-btn:hover {
     box-shadow: 0 6px 15px rgba(32, 178, 170, 0.4);
 }
 
-/* ---------------- DISPENSER MANAGER ---------------- */
+/* ================= TABLE ================= */
 
-.slot-card {
-    transition: all 0.2s ease-in-out;
+table {
+    border-collapse: collapse;
 }
 
-.slot-card:hover {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
-
-/* Tablet count highlight */
-.tablet-count {
-    font-weight: bold;
-    color: #0d9488;
-}
-
-/* Low stock warning */
-.low-stock {
-    color: #dc2626;
+th {
     font-weight: 600;
+    color: #374151;
 }
 
-/* Schedule container */
-.schedule-container {
-    margin-top: 8px;
+td, th {
+    padding: 10px 12px;
 }
 
-.schedule-container > div {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-/* Remove time button */
-.remove-time {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-weight: bold;
-    transition: all 0.2s ease-in-out;
-}
-
-.remove-time:hover {
-    background-color: #fee2e2;
-    color: #dc2626;
-}
-
-/* Add time button */
-.add-time-btn {
-    font-weight: 500;
-}
-
-.add-time-btn:hover {
-    text-decoration: underline;
-}
-
-/* ---------------- ERROR STATE ---------------- */
+/* ================= ERROR INPUT ================= */
 
 .input-error {
     border-color: #ef4444 !important;
@@ -201,10 +208,15 @@ button.primary-btn:hover {
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
 }
 
-/* ---------------- RESPONSIVE ---------------- */
+/* ================= RESPONSIVE ================= */
 
 @media (max-width: 768px) {
-    .dashboard-card {
-        padding: 18px;
+    .login-container {
+        flex-direction: column;
+    }
+
+    .login-left-panel,
+    .login-right-panel {
+        width: 100%;
     }
 }
