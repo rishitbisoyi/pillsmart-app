@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const BACKEND_URL = '';
     const DEFAULT_RINGTONE_URL = "alarm.mp3";
+    const LOW_STOCK_THRESHOLD = 5;
 
     let slots = [];
     let dispenseLogs = [];
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const avatarDiv = document.getElementById("profile-avatar");
     const toast = document.getElementById("toast");
 
-    /* ================== UTILITIES ================== */
+    /* ================= UTIL ================= */
 
     function showToast(msg, type="success") {
         toast.textContent = msg;
@@ -36,13 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const getToken = () =>
         localStorage.getItem("authToken") ||
         sessionStorage.getItem("authToken");
-
-    function saveAuth(token, name, email, remember) {
-        const storage = remember ? localStorage : sessionStorage;
-        storage.setItem("authToken", token);
-        storage.setItem("userName", name);
-        storage.setItem("userEmail", email);
-    }
 
     function logout() {
         localStorage.clear();
@@ -72,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /* ================= NAVIGATION ================= */
+    /* ================= NAV ================= */
 
     const navItems = [
         {id:"dashboard",name:"Dashboard"},
@@ -103,20 +97,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /* ================= NEXT DOSE ================= */
+
+    function getNextDose() {
+        const now = new Date();
+        let upcoming = null;
+
+        slots.forEach(slot => {
+            (slot.schedules || []).forEach(s => {
+                const [h,m] = s.time.split(":");
+                const doseTime = new Date();
+                doseTime.setHours(h, m, 0);
+
+                if(doseTime > now) {
+                    if(!upcoming || doseTime < upcoming.time) {
+                        upcoming = {
+                            time: doseTime,
+                            medicine: slot.medicine_name,
+                            dosage: s.dosage
+                        };
+                    }
+                }
+            });
+        });
+
+        return upcoming;
+    }
+
     /* ================= DASHBOARD ================= */
 
     function renderDashboard() {
 
-        const totalMeds = slots.length;
         const totalSchedules =
-            slots.reduce((acc,s)=>acc + (s.schedules?.length||0),0);
+            slots.reduce((a,s)=>a+(s.schedules?.length||0),0);
+
+        const next = getNextDose();
 
         return `
         <div class="grid md:grid-cols-3 gap-6">
 
             <div class="bg-white p-6 rounded-xl shadow">
                 <h3 class="font-semibold text-gray-500">Total Slots</h3>
-                <p class="text-3xl font-bold">${totalMeds}</p>
+                <p class="text-3xl font-bold">${slots.length}</p>
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow">
@@ -125,9 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="font-semibold text-gray-500">Recent Logs</h3>
-                <p class="text-sm text-gray-600">
-                    ${dispenseLogs[0]?.medicine_name || "No logs yet"}
+                <h3 class="font-semibold text-gray-500">Next Dose</h3>
+                <p class="text-sm">
+                    ${next ? 
+                        `${next.medicine} (${next.dosage}) at ${next.time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`
+                        : "No upcoming dose"}
                 </p>
             </div>
 
@@ -139,10 +163,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSchedule() {
 
         return `
-        <div class="space-y-6">
+        <div class="grid md:grid-cols-2 gap-6">
             ${slots.map(slot=>`
-                <div class="bg-white p-6 rounded-xl shadow space-y-3">
-                    <h3 class="font-bold">Slot ${slot.slot_number}</h3>
+
+                <div class="bg-white p-6 rounded-xl shadow space-y-4
+                    ${slot.tablets_left <= LOW_STOCK_THRESHOLD ? "border-2 border-red-500" : ""}">
+
+                    <h3 class="font-bold text-lg">
+                        Slot ${slot.slot_number}
+                        <span class="text-sm text-gray-500">
+                            (${slot.tablets_left || 0} left)
+                        </span>
+                    </h3>
 
                     <input data-slot="${slot.slot_number}"
                            class="slot-name border p-2 w-full rounded"
@@ -155,30 +187,92 @@ document.addEventListener('DOMContentLoaded', () => {
                            placeholder="Total Tablets"
                            value="${slot.total_tablets || 0}">
 
+                    <div class="space-y-2">
+
+                        ${(slot.schedules||[])
+                            .sort((a,b)=>a.time.localeCompare(b.time))
+                            .map((sch,i)=>`
+                            <div class="flex gap-2">
+                                <input type="time"
+                                       data-slot="${slot.slot_number}"
+                                       data-index="${i}"
+                                       class="schedule-time border p-2 rounded w-1/2"
+                                       value="${sch.time}">
+
+                                <input type="number"
+                                       data-slot="${slot.slot_number}"
+                                       data-index="${i}"
+                                       class="schedule-dosage border p-2 rounded w-1/3"
+                                       value="${sch.dosage}">
+
+                                <button data-slot="${slot.slot_number}"
+                                        data-index="${i}"
+                                        class="remove-time text-red-600">
+                                        ✕
+                                </button>
+                            </div>
+                        `).join("")}
+
+                        <button data-slot="${slot.slot_number}"
+                                class="add-time text-teal-600 text-sm">
+                            + Add Time
+                        </button>
+                    </div>
+
                     <button data-slot="${slot.slot_number}"
-                            class="save-slot bg-teal-600 text-white px-4 py-2 rounded">
+                            class="save-slot bg-teal-600 text-white px-4 py-2 rounded w-full">
                         Save Slot
                     </button>
+
                 </div>
             `).join("")}
         </div>`;
     }
+
+    /* ================= AUTO DECREASE ================= */
+
+    async function checkAndDispense() {
+
+        const now = new Date();
+        const currentTime =
+            now.toTimeString().slice(0,5);
+
+        for(const slot of slots) {
+
+            for(const s of (slot.schedules||[])) {
+
+                if(s.time === currentTime && slot.tablets_left >= s.dosage) {
+
+                    slot.tablets_left -= s.dosage;
+
+                    await apiCall("/log_dispense","POST",{
+                        slot_number: slot.slot_number,
+                        medicine_name: slot.medicine_name,
+                        dosage: s.dosage,
+                        status:"Taken"
+                    });
+
+                    await apiCall("/update_slot","POST",slot);
+
+                    showToast(`Dispensed ${s.dosage} from ${slot.medicine_name}`);
+                }
+            }
+        }
+    }
+
+    setInterval(checkAndDispense, 60000);
 
     /* ================= LOGS ================= */
 
     function renderLogs() {
         return `
         <div class="bg-white p-6 rounded-xl shadow">
-            <h2 class="font-bold mb-4">Dispense Logs</h2>
-            ${dispenseLogs.length === 0 ?
-                "<p>No logs yet.</p>" :
-                dispenseLogs.map(l=>`
-                    <div class="border p-3 mb-2 rounded">
-                        Slot ${l.slot_number} - ${l.medicine_name}
-                        <div class="text-sm text-gray-500">${l.time}</div>
-                    </div>
-                `).join("")
-            }
+            ${dispenseLogs.map(l=>`
+                <div class="border p-3 mb-2 rounded">
+                    ${l.medicine_name} - ${l.dosage}
+                    <div class="text-sm text-gray-500">${l.time}</div>
+                </div>
+            `).join("")}
         </div>`;
     }
 
@@ -187,11 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderAlerts() {
         return `
         <div class="bg-white p-6 rounded-xl shadow space-y-4">
-            <h2 class="font-bold">Alarm Settings</h2>
-
             <input type="file" id="alarm-upload" accept="audio/*"
                    class="border p-2 w-full rounded">
-
             <button id="test-alarm"
                     class="bg-blue-600 text-white px-4 py-2 rounded">
                 Test Alarm
@@ -202,32 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ================= PROFILE ================= */
 
     function renderProfile() {
-
         return `
         <div class="bg-white p-8 rounded-xl shadow max-w-xl space-y-6">
-
-            <div class="flex flex-col items-center space-y-2">
-
-                <div id="profile-preview"
-                     class="h-24 w-24 rounded-full bg-teal-500 text-white
-                            flex items-center justify-center text-2xl font-bold overflow-hidden cursor-pointer">
-                    ${userDetails.profile_pic ?
-                        `<img src="${userDetails.profile_pic}"
-                              class="h-full w-full object-cover">`
-                        :
-                        (userDetails.name||"U")
-                            .split(" ")
-                            .map(n=>n[0])
-                            .join("")
-                            .substring(0,2)
-                            .toUpperCase()
-                    }
-                </div>
-
-                <input type="file" id="profile-upload"
-                       accept="image/*" class="hidden">
-
-            </div>
 
             <input id="prof-name"
                    class="w-full border p-2 rounded"
@@ -250,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     }
 
-    /* ================= PAGE ROUTER ================= */
+    /* ================= ROUTER ================= */
 
     function showPage(page) {
         activePage = page;
@@ -270,12 +337,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if(e.target.closest("#logout-btn")) logout();
 
-        if(e.target.closest("#profile-avatar"))
-            showPage("profile");
-
         if(e.target.closest(".nav-link")) {
             e.preventDefault();
             showPage(e.target.dataset.page);
+        }
+
+        if(e.target.closest(".add-time")) {
+            const slot = slots.find(s=>s.slot_number==e.target.dataset.slot);
+            if(!slot.schedules) slot.schedules=[];
+            slot.schedules.push({time:"09:00",dosage:1});
+            showPage("schedule");
+        }
+
+        if(e.target.closest(".remove-time")) {
+            const slot = slots.find(s=>s.slot_number==e.target.dataset.slot);
+            slot.schedules.splice(e.target.dataset.index,1);
+            showPage("schedule");
+        }
+
+        if(e.target.closest(".save-slot")) {
+
+            const slotNumber = e.target.dataset.slot;
+            const slot = slots.find(s=>s.slot_number==slotNumber);
+
+            slot.medicine_name =
+                document.querySelector(`.slot-name[data-slot="${slotNumber}"]`).value;
+
+            slot.total_tablets =
+                parseInt(document.querySelector(`.slot-tablets[data-slot="${slotNumber}"]`).value);
+
+            const timeInputs =
+                document.querySelectorAll(`.schedule-time[data-slot="${slotNumber}"]`);
+
+            const dosageInputs =
+                document.querySelectorAll(`.schedule-dosage[data-slot="${slotNumber}"]`);
+
+            slot.schedules = [];
+
+            timeInputs.forEach((t,i)=>{
+                slot.schedules.push({
+                    time:t.value,
+                    dosage:parseInt(dosageInputs[i].value)
+                });
+            });
+
+            slot.schedules.sort((a,b)=>a.time.localeCompare(b.time));
+
+            await apiCall("/update_slot","POST",slot);
+
+            showToast("Slot Saved");
         }
 
         if(e.target.closest("#save-profile-btn")) {
@@ -285,7 +395,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 phone: document.getElementById("prof-phone").value
             };
 
-            const newPass = document.getElementById("new-password").value;
+            const newPass =
+                document.getElementById("new-password").value;
+
             if(newPass) payload.new_password = newPass;
 
             const res = await apiCall("/update_profile","POST",payload);
@@ -295,9 +407,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if(e.target.closest("#test-alarm")) {
-            const audio = new Audio(
-                userDetails.custom_ringtone || DEFAULT_RINGTONE_URL
-            );
+            const audio =
+                new Audio(userDetails.custom_ringtone || DEFAULT_RINGTONE_URL);
             audio.play();
         }
     });
