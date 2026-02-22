@@ -367,16 +367,24 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ================= ROUTER ================= */
 
     function showPage(page) {
-        activePage = page;
-        pageTitle.textContent =
-            navItems.find(n=>n.id===page)?.name || "Dashboard";
+    activePage = page;
+    pageTitle.textContent =
+        navItems.find(n=>n.id===page)?.name || "Dashboard";
 
-        if(page==="dashboard") pageContent.innerHTML = renderDashboard();
-        if(page==="logs") pageContent.innerHTML = renderLogs();
-        if(page==="alerts") pageContent.innerHTML = renderAlerts();
-        if(page==="profile") pageContent.innerHTML = renderProfile();
-        if(page==="schedule") pageContent.innerHTML = renderSchedule();
-    }
+    let content = "";
+
+    if(page==="dashboard") content = renderDashboard();
+    if(page==="logs") content = renderLogs();
+    if(page==="alerts") content = renderAlerts();
+    if(page==="profile") content = renderProfile();
+    if(page==="schedule") content = renderSchedule();
+
+    pageContent.innerHTML = `
+        <div class="bg-white min-h-full rounded-xl p-6 shadow-sm">
+            ${content}
+        </div>
+    `;
+}
 
     /* ================= EVENTS ================= */
 
