@@ -1,15 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    /* ================= CONFIG ================= */
-
-    const BACKEND_URL = " "; // 🔥 CHANGE if needed
+    const BACKEND_URL = '';
 
     let slots = [];
     let dispenseLogs = [];
     let userDetails = { name: "", email: "", phone: "", profile_pic: "" };
     let activePage = 'dashboard';
-
-    /* ================= DOM ELEMENTS ================= */
 
     const authPage = document.getElementById('authPage');
     const appContainer = document.getElementById('appContainer');
@@ -23,17 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ================= SAFE TOAST ================= */
 
-    function showToast(msg, type = 'success') {
-        if (!toast) return;
+    function showToast(msg, type='success'){
+        if(!toast) return;
 
         toast.textContent = msg;
-        toast.className = `fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg z-50 ${
-            type === 'success' ? 'bg-teal-500' : 'bg-red-500'
-        }`;
+        toast.className =
+            `fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg z-50 
+             ${type==='success'?'bg-teal-500':'bg-red-500'}`;
 
         toast.classList.remove('hidden');
 
-        setTimeout(() => toast.classList.add('hidden'), 3000);
+        setTimeout(()=> toast.classList.add('hidden'), 3000);
     }
 
     /* ================= TOKEN ================= */
@@ -42,14 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.getItem('authToken') ||
         sessionStorage.getItem('authToken');
 
-    function saveAuth(token, name, email, remember) {
+    function saveAuth(token, name, email, remember){
         const storage = remember ? localStorage : sessionStorage;
         storage.setItem('authToken', token);
         storage.setItem('userName', name);
         storage.setItem('userEmail', email);
     }
 
-    function performLogout() {
+    function performLogout(){
         localStorage.clear();
         sessionStorage.clear();
         location.reload();
@@ -57,142 +53,132 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ================= SAFE API ================= */
 
-    async function apiCall(endpoint, method = 'GET', body = null) {
-        try {
+    async function apiCall(endpoint, method='GET', body=null){
+        try{
             const token = getAuthToken();
 
-            const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+            const res = await fetch(`${BACKEND_URL}${endpoint}`,{
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                headers:{
+                    'Content-Type':'application/json',
+                    ...(token?{'Authorization':`Bearer ${token}`}:{})
                 },
-                body: body ? JSON.stringify(body) : null
+                body: body?JSON.stringify(body):null
             });
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.warn("API error:", res.status, errorText);
-                return { success: false };
+            if(!res.ok){
+                console.warn("API error:", res.status);
+                return {success:false};
             }
 
             return await res.json();
 
-        } catch (err) {
+        } catch(err){
             console.error("API FAILURE:", err);
-            return { success: false };
+            return {success:false};
         }
     }
 
-    /* ================= AUTH SWITCH ================= */
+    /* ================= AUTH PAGE SWITCH ================= */
 
-    document.getElementById('show-signup-link')?.addEventListener('click', e => {
+    document.getElementById('show-signup-link')?.addEventListener('click', e=>{
         e.preventDefault();
-        loginContainer?.classList.add('page-hidden');
-        signupContainer?.classList.remove('page-hidden');
-        forgotContainer?.classList.add('page-hidden');
+        loginContainer.classList.add('page-hidden');
+        signupContainer.classList.remove('page-hidden');
+        forgotContainer.classList.add('page-hidden');
     });
 
-    document.getElementById('show-login-link')?.addEventListener('click', e => {
+    document.getElementById('show-login-link')?.addEventListener('click', e=>{
         e.preventDefault();
-        signupContainer?.classList.add('page-hidden');
-        loginContainer?.classList.remove('page-hidden');
-        forgotContainer?.classList.add('page-hidden');
+        signupContainer.classList.add('page-hidden');
+        loginContainer.classList.remove('page-hidden');
+        forgotContainer.classList.add('page-hidden');
     });
 
-    document.getElementById('forgot-password-link')?.addEventListener('click', e => {
+    document.getElementById('forgot-password-link')?.addEventListener('click', e=>{
         e.preventDefault();
-        loginContainer?.classList.add('page-hidden');
-        signupContainer?.classList.add('page-hidden');
-        forgotContainer?.classList.remove('page-hidden');
+        loginContainer.classList.add('page-hidden');
+        signupContainer.classList.add('page-hidden');
+        forgotContainer.classList.remove('page-hidden');
     });
 
-    document.getElementById('back-to-login-link')?.addEventListener('click', e => {
+    document.getElementById('back-to-login-link')?.addEventListener('click', e=>{
         e.preventDefault();
-        forgotContainer?.classList.add('page-hidden');
-        loginContainer?.classList.remove('page-hidden');
+        forgotContainer.classList.add('page-hidden');
+        loginContainer.classList.remove('page-hidden');
     });
 
     /* ================= LOGIN ================= */
 
-    document.getElementById('login-form')?.addEventListener('submit', async e => {
+    document.getElementById('login-form')?.addEventListener('submit', async e=>{
         e.preventDefault();
 
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        const remember = document.getElementById('rememberMe')?.checked;
+        const email=document.getElementById('login-email').value;
+        const password=document.getElementById('login-password').value;
+        const remember=document.getElementById('rememberMe').checked;
 
-        const res = await apiCall('/login', 'POST', { email, password });
+        const res=await apiCall('/login','POST',{email,password});
 
-        if (res.success) {
-            saveAuth(res.token, res.name, res.email, remember);
+        if(res.success){
+            saveAuth(res.token,res.name,res.email,remember);
             location.reload();
         } else {
-            showToast(res.error || "Login Failed", 'error');
+            showToast(res.error||"Login Failed",'error');
         }
     });
 
     /* ================= SIGNUP ================= */
 
-    document.getElementById('signup-form')?.addEventListener('submit', async e => {
+    document.getElementById('signup-form')?.addEventListener('submit', async e=>{
         e.preventDefault();
 
-        const name = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
+        const name=document.getElementById('signup-name').value;
+        const email=document.getElementById('signup-email').value;
+        const password=document.getElementById('signup-password').value;
 
-        const res = await apiCall('/register', 'POST', { name, email, password });
+        const res=await apiCall('/register','POST',{name,email,password});
 
-        if (res.success) {
+        if(res.success){
             showToast("Registered Successfully");
-            signupContainer?.classList.add('page-hidden');
-            loginContainer?.classList.remove('page-hidden');
-        } else {
-            showToast(res.error || "Registration Failed", 'error');
-        }
+            signupContainer.classList.add('page-hidden');
+            loginContainer.classList.remove('page-hidden');
+        } else showToast(res.error,'error');
     });
 
     /* ================= PROFILE ================= */
 
-    function updateAvatar() {
-        if (!avatarDiv) return;
+    function updateAvatar(){
+        if(!avatarDiv) return;
 
-        if (userDetails.profile_pic) {
-            avatarDiv.innerHTML = `
-                <img src="${userDetails.profile_pic}"
-                     class="h-10 w-10 rounded-full object-cover">
-            `;
+        if(userDetails.profile_pic){
+            avatarDiv.innerHTML =
+                `<img src="${userDetails.profile_pic}"
+                      class="h-10 w-10 rounded-full object-cover">`;
         } else {
-            const initials = (userDetails.name || "U")
+            const initials=(userDetails.name||"U")
                 .split(" ")
-                .map(n => n[0])
+                .map(n=>n[0])
                 .join("")
-                .substring(0, 2)
+                .substring(0,2)
                 .toUpperCase();
-
-            avatarDiv.innerHTML = `
-                <div class="h-10 w-10 flex items-center justify-center 
-                            bg-gray-500 text-white rounded-full font-semibold">
-                    ${initials}
-                </div>
-            `;
+            avatarDiv.textContent=initials;
         }
     }
 
-    function renderProfile() {
+    function renderProfile(){
         return `
         <div class="dashboard-card p-8 max-w-2xl space-y-6 bg-white rounded-xl shadow">
 
             <div>
                 <label class="font-semibold block mb-1">Full Name</label>
                 <input id="prof-name" class="w-full p-2 border rounded"
-                       value="${userDetails.name || ''}">
+                       value="${userDetails.name||''}">
             </div>
 
             <div>
                 <label class="font-semibold block mb-1">Phone</label>
                 <input id="prof-phone" class="w-full p-2 border rounded"
-                       value="${userDetails.phone || ''}">
+                       value="${userDetails.phone||''}">
             </div>
 
             <div>
@@ -202,87 +188,82 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <button id="save-profile-btn"
-                    class="bg-teal-500 text-white px-4 py-2 rounded w-full">
+                    class="primary-btn w-full">
                 Save Changes
             </button>
 
         </div>`;
     }
 
-    function showPage(page) {
-        activePage = page;
+    function showPage(page){
+        activePage=page;
 
-        if (page === 'profile') {
-            pageTitle.textContent = "Profile";
-            pageContent.innerHTML = renderProfile();
+        if(page==='profile'){
+            pageTitle.textContent="Profile";
+            pageContent.innerHTML=renderProfile();
             return;
         }
 
-        pageTitle.textContent = "Dashboard";
-        pageContent.innerHTML = `
-            <div class="dashboard-card p-6 bg-white rounded-xl shadow">
-                Welcome ${userDetails.name || "User"}
-            </div>`;
+        pageTitle.textContent="Dashboard";
+        pageContent.innerHTML=
+            `<div class="dashboard-card p-6">
+                Welcome ${userDetails.name}
+             </div>`;
     }
 
-    document.body.addEventListener('click', async e => {
+    document.body.addEventListener('click', async e=>{
 
-        if (e.target.closest('#logout-btn')) performLogout();
+        if(e.target.closest('#logout-btn')) performLogout();
 
-        if (e.target.closest('#profile-avatar'))
+        if(e.target.closest('#profile-avatar'))
             showPage('profile');
 
-        if (e.target.closest('#save-profile-btn')) {
+        if(e.target.closest('#save-profile-btn')){
 
-            const payload = {
-                name: document.getElementById('prof-name').value,
-                phone: document.getElementById('prof-phone').value
+            const payload={
+                name:document.getElementById('prof-name').value,
+                phone:document.getElementById('prof-phone').value
             };
 
-            const newPass = document.getElementById('new-password').value;
-            if (newPass) payload.new_password = newPass;
+            const newPass=document.getElementById('new-password').value;
+            if(newPass) payload.new_password=newPass;
 
-            const res = await apiCall('/update_profile', 'POST', payload);
+            const res=await apiCall('/update_profile','POST',payload);
 
-            if (res.success) {
-                userDetails.name = payload.name;
-                userDetails.phone = payload.phone;
-
-                updateAvatar();
-                showPage('dashboard');
+            if(res.success){
                 showToast("Profile Updated Successfully");
             } else {
-                showToast("Update Failed", 'error');
+                showToast("Update Failed",'error');
             }
         }
     });
 
-    /* ================= REFRESH ================= */
+    /* ================= SAFE REFRESH ================= */
 
-    async function refreshData() {
-        try {
+    async function refreshData(){
+        try{
             const profile = await apiCall('/get_profile');
 
-            if (profile?.name) {
+            if(profile?.name){
                 userDetails = profile;
                 updateAvatar();
                 showPage('dashboard');
             }
 
-        } catch (err) {
+        } catch(err){
             console.error("Refresh failed:", err);
         }
     }
 
     /* ================= INIT ================= */
 
-    if (getAuthToken()) {
-        authPage?.classList.add('page-hidden');
-        appContainer?.classList.remove('page-hidden');
+    if(getAuthToken()){
+        authPage.classList.add('page-hidden');
+        appContainer.classList.remove('page-hidden');
         refreshData();
     } else {
-        appContainer?.classList.add('page-hidden');
-        authPage?.classList.remove('page-hidden');
+        appContainer.classList.add('page-hidden');
+        authPage.classList.remove('page-hidden');
     }
 
 });
