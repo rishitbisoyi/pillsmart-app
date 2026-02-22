@@ -71,12 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ================= NAV ================= */
 
     const navItems = [
-        {id:"dashboard",name:"Dashboard"},
-        {id:"schedule",name:"Dispenser Manager"},
-        {id:"logs",name:"Logs"},
-        {id:"alerts",name:"Alerts"},
-        {id:"profile",name:"Profile"}
-    ];
+    {id:"dashboard",name:"Dashboard"},
+    {id:"schedule",name:"Schedule Inventory"},
+    {id:"logs",name:"Logs"},
+    {id:"alerts",name:"Alerts"},
+    {id:"profile",name:"Profile"}
+];
 
     function renderNav() {
         const sidebar = document.getElementById("sidebar-nav");
@@ -138,6 +138,83 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return upcoming;
     }
+
+    function renderSchedule() {
+
+    return `
+    <div class="space-y-6">
+
+        <h2 class="text-2xl font-bold">Schedule Inventory</h2>
+
+        <div class="grid md:grid-cols-2 gap-6">
+
+            ${slots.map(slot=>`
+
+                <div class="bg-white p-6 rounded-xl shadow space-y-4
+                    ${slot.tablets_left <= LOW_STOCK_THRESHOLD ? "border-2 border-red-500" : ""}">
+
+                    <h3 class="font-bold text-lg">
+                        Slot ${slot.slot_number}
+                        <span class="text-sm text-gray-500">
+                            (${slot.tablets_left || 0} left)
+                        </span>
+                    </h3>
+
+                    <input data-slot="${slot.slot_number}"
+                           class="slot-name border p-2 w-full rounded"
+                           placeholder="Medicine Name"
+                           value="${slot.medicine_name || ""}">
+
+                    <input data-slot="${slot.slot_number}"
+                           type="number"
+                           class="slot-tablets border p-2 w-full rounded"
+                           placeholder="Total Tablets"
+                           value="${slot.total_tablets || 0}">
+
+                    <div class="space-y-2">
+
+                        ${(slot.schedules||[])
+                            .sort((a,b)=>a.time.localeCompare(b.time))
+                            .map((sch,i)=>`
+                            <div class="flex gap-2">
+                                <input type="time"
+                                       data-slot="${slot.slot_number}"
+                                       data-index="${i}"
+                                       class="schedule-time border p-2 rounded w-1/2"
+                                       value="${sch.time}">
+
+                                <input type="number"
+                                       data-slot="${slot.slot_number}"
+                                       data-index="${i}"
+                                       class="schedule-dosage border p-2 rounded w-1/3"
+                                       value="${sch.dosage}">
+
+                                <button data-slot="${slot.slot_number}"
+                                        data-index="${i}"
+                                        class="remove-time text-red-600">
+                                        ✕
+                                </button>
+                            </div>
+                        `).join("")}
+
+                        <button data-slot="${slot.slot_number}"
+                                class="add-time text-teal-600 text-sm">
+                            + Add Time
+                        </button>
+                    </div>
+
+                    <button data-slot="${slot.slot_number}"
+                            class="save-slot bg-teal-600 text-white px-4 py-2 rounded w-full">
+                        Save Slot
+                    </button>
+
+                </div>
+            `).join("")}
+
+        </div>
+
+    </div>`;
+}
 
     function renderDashboard() {
 
@@ -298,11 +375,70 @@ document.addEventListener('DOMContentLoaded', () => {
         if(page==="logs") pageContent.innerHTML = renderLogs();
         if(page==="alerts") pageContent.innerHTML = renderAlerts();
         if(page==="profile") pageContent.innerHTML = renderProfile();
+        if(page==="schedule") pageContent.innerHTML = renderSchedule();
     }
 
     /* ================= EVENTS ================= */
 
     document.body.addEventListener("click", async e => {
+
+                /* ======== SCHEDULE INVENTORY LOGIC (ADDED) ======== */
+
+        if(e.target.closest(".add-time")) {
+            const slot = slots.find(s => s.slot_number == e.target.dataset.slot);
+            if(!slot.schedules) slot.schedules = [];
+            slot.schedules.push({ time: "09:00", dosage: 1 });
+            showPage("schedule");
+        }
+
+        if(e.target.closest(".remove-time")) {
+            const slot = slots.find(s => s.slot_number == e.target.dataset.slot);
+            slot.schedules.splice(e.target.dataset.index, 1);
+            showPage("schedule");
+        }
+
+        if(e.target.closest(".save-slot")) {
+
+            const slotNumber = e.target.dataset.slot;
+            const slot = slots.find(s => s.slot_number == slotNumber);
+
+            slot.medicine_name =
+                document.querySelector(`.slot-name[data-slot="${slotNumber}"]`).value;
+
+            slot.total_tablets =
+                parseInt(document.querySelector(`.slot-tablets[data-slot="${slotNumber}"]`).value);
+
+            if(!slot.tablets_left || slot.tablets_left > slot.total_tablets) {
+                slot.tablets_left = slot.total_tablets;
+            }
+
+            const timeInputs =
+                document.querySelectorAll(`.schedule-time[data-slot="${slotNumber}"]`);
+
+            const dosageInputs =
+                document.querySelectorAll(`.schedule-dosage[data-slot="${slotNumber}"]`);
+
+            slot.schedules = [];
+
+            timeInputs.forEach((t,i)=>{
+                if(t.value) {
+                    slot.schedules.push({
+                        time: t.value,
+                        dosage: parseInt(dosageInputs[i].value) || 1
+                    });
+                }
+            });
+
+            slot.schedules.sort((a,b)=>a.time.localeCompare(b.time));
+
+            const res = await apiCall("/update_slot","POST",slot);
+
+            if(res && res.success === true) {
+                showToast("Slot Saved Successfully ✅");
+            } else {
+                showToast("Failed to Save Slot ❌","error");
+            }
+        }
 
         if(e.target.closest("#logout-btn")) logout();
 
@@ -393,6 +529,34 @@ document.addEventListener('DOMContentLoaded', () => {
             authPage.classList.remove("page-hidden");
         }
     }
+    async function checkAndDispense() {
 
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0,5);
+
+        for(const slot of slots) {
+
+            for(const s of (slot.schedules || [])) {
+
+                if(s.time === currentTime && slot.tablets_left >= s.dosage) {
+
+                    slot.tablets_left -= s.dosage;
+
+                    await apiCall("/log_dispense","POST",{
+                        slot_number: slot.slot_number,
+                        medicine_name: slot.medicine_name,
+                        dosage: s.dosage,
+                        status:"Taken"
+                    });
+
+                    await apiCall("/update_slot","POST",slot);
+
+                    showToast(`Dispensed ${s.dosage} from ${slot.medicine_name}`);
+                }
+            }
+        }
+    }
+
+    setInterval(checkAndDispense, 60000);
     init();
 });
