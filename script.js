@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageTitle = document.getElementById('page-title');
     const avatarDiv = document.getElementById('profile-avatar');
 
-    /* ================= AUTH PAGE SWITCHING (ADDED) ================= */
+    /* ================= AUTH PAGE SWITCHING ================= */
 
     document.getElementById('show-signup-link')?.addEventListener('click', (e)=>{
         e.preventDefault();
@@ -52,20 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupPasswordToggle(inputId, buttonId) {
         const input = document.getElementById(inputId);
         const btn = document.getElementById(buttonId);
-
         if (!input || !btn) return;
 
         btn.addEventListener('click', () => {
             const icon = btn.querySelector('i');
-
             if (input.type === 'password') {
                 input.type = 'text';
-                icon.classList.remove('ph-eye');
-                icon.classList.add('ph-eye-slash');
+                icon.classList.replace('ph-eye','ph-eye-slash');
             } else {
                 input.type = 'password';
-                icon.classList.remove('ph-eye-slash');
-                icon.classList.add('ph-eye');
+                icon.classList.replace('ph-eye-slash','ph-eye');
             }
         });
     }
@@ -115,8 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showToast(msg,type='success'){
         const t=document.getElementById('toast');
         t.textContent=msg;
-        t.className=`bg-${type==='success'?'teal':'red'}-500 fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg show`;
-        setTimeout(()=>t.classList.remove('show'),3000);
+        t.className=`fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg z-50 ${type==='success'?'bg-teal-500':'bg-red-500'}`;
+        t.classList.remove('hidden');
+        setTimeout(()=>t.classList.add('hidden'),3000);
     }
 
     function updateNav(){
@@ -142,8 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(userDetails.profile_pic){
             avatarDiv.innerHTML = `<img src="${userDetails.profile_pic}" class="h-10 w-10 rounded-full object-cover">`;
         } else {
-            const name = userDetails.name || localStorage.getItem('userName') || "U";
-            avatarDiv.textContent = name.charAt(0).toUpperCase();
+            const initials = (userDetails.name || "U")
+                .split(" ")
+                .map(n => n[0])
+                .join("")
+                .substring(0,2)
+                .toUpperCase();
+            avatarDiv.textContent = initials;
         }
     }
 
@@ -201,16 +203,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderProfile(){
         return `
-        <div class="dashboard-card p-8 max-w-2xl space-y-6">
+        <div class="dashboard-card p-8 max-w-2xl space-y-6 bg-white rounded-xl shadow">
 
             <div class="flex flex-col items-center space-y-4">
 
                 <div id="profile-preview"
-                     class="h-28 w-28 rounded-full bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-600 cursor-pointer overflow-hidden shadow">
+                     class="h-28 w-28 rounded-full bg-teal-500 text-white flex items-center justify-center text-4xl font-bold cursor-pointer overflow-hidden shadow">
 
                      ${userDetails.profile_pic
                         ? `<img src="${userDetails.profile_pic}" class="h-full w-full object-cover">`
-                        : userDetails.name?.charAt(0)?.toUpperCase() || 'U'}
+                        : (userDetails.name || "U")
+                            .split(" ")
+                            .map(n => n[0])
+                            .join("")
+                            .substring(0,2)
+                            .toUpperCase()}
                 </div>
 
                 <p class="text-sm text-gray-500">Click photo to change</p>
@@ -218,37 +225,31 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div>
-                <label class="font-semibold block mb-2">Full Name</label>
+                <label class="font-semibold block mb-1">Full Name</label>
                 <input id="prof-name" class="w-full p-2 border rounded"
                     value="${userDetails.name||''}">
             </div>
 
             <div>
-                <label class="font-semibold block mb-2">New Password</label>
-                <input type="password" id="new-password" class="w-full p-2 border rounded" placeholder="Leave empty if unchanged">
+                <label class="font-semibold block mb-1">Email</label>
+                <input class="w-full p-2 border rounded bg-gray-100"
+                    value="${userDetails.email||''}" disabled>
+            </div>
+
+            <div>
+                <label class="font-semibold block mb-1">Phone</label>
+                <input id="prof-phone" class="w-full p-2 border rounded"
+                    value="${userDetails.phone||''}">
+            </div>
+
+            <div>
+                <label class="font-semibold block mb-1">New Password</label>
+                <input type="password" id="new-password" class="w-full p-2 border rounded"
+                       placeholder="Leave empty if unchanged">
             </div>
 
             <button id="save-profile-btn" class="primary-btn w-full">Save Changes</button>
         </div>`;
-    }
-
-    function showPage(page){
-        activePage=page;
-
-        if(page === 'profile'){
-            pageTitle.textContent = "Profile";
-            pageContent.innerHTML = renderProfile();
-            attachProfileHandlers();
-            return;
-        }
-
-        pageTitle.textContent=navItems.find(n=>n.id===page)?.name||'PillSmart';
-        updateNav();
-
-        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
-        if(page==='schedule') pageContent.innerHTML=`<div class="dashboard-card p-6">Dispenser Manager</div>`;
-        if(page==='logs') pageContent.innerHTML=`<div class="dashboard-card p-6">${dispenseLogs.map(l=>`<div class="border p-2 mb-2 rounded">Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}</div>`).join('')}</div>`;
-        if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
     }
 
     function attachProfileHandlers(){
@@ -271,6 +272,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function showPage(page){
+        activePage=page;
+
+        if(page === 'profile'){
+            pageTitle.textContent = "Profile";
+            pageContent.innerHTML = renderProfile();
+            attachProfileHandlers();
+            return;
+        }
+
+        pageTitle.textContent=navItems.find(n=>n.id===page)?.name||'PillSmart';
+        updateNav();
+
+        if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
+        if(page==='schedule') pageContent.innerHTML=`<div class="dashboard-card p-6">Dispenser Manager</div>`;
+        if(page==='logs') pageContent.innerHTML=`<div class="dashboard-card p-6">${dispenseLogs.map(l=>`<div class="border p-2 mb-2 rounded">Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}</div>`).join('')}</div>`;
+        if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
+    }
+
     document.body.addEventListener('click',async(e)=>{
 
         if(e.target.closest('#logout-btn')) performLogout();
@@ -279,18 +299,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if(e.target.id==='save-profile-btn'){
             const newName=document.getElementById('prof-name').value;
+            const newPhone=document.getElementById('prof-phone').value;
             const newPassword=document.getElementById('new-password').value;
 
             let payload={
                 name:newName,
+                phone:newPhone,
                 profile_pic:userDetails.profile_pic
             };
 
             if(newPassword) payload.new_password=newPassword;
 
-            await apiCall('/update_profile','POST',payload);
-            showToast("Profile Updated");
-            refreshData();
+            const res = await apiCall('/update_profile','POST',payload);
+
+            if(res.success){
+                showToast("Profile Updated Successfully");
+                await refreshData();
+            } else {
+                showToast("Update Failed",'error');
+            }
         }
     });
 
