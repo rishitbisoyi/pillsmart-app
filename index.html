@@ -9,8 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <!-- Version bumped to 19.0 -->
-    <link rel="stylesheet" href="style.css?v=19.0">
+    <!-- Version bumped to 20.0 -->
+    <link rel="stylesheet" href="style.css?v=20.0">
 </head>
 
 <body class="bg-gray-100 font-sans">
@@ -41,7 +41,7 @@
             <!-- Right Panel -->
             <div class="login-right-panel w-full lg:w-3/5">
 
-                <!-- LOGIN (unchanged) -->
+                <!-- LOGIN -->
                 <div id="login-form-container" class="max-w-md mx-auto w-full">
 
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
@@ -89,7 +89,7 @@
                     </p>
                 </div>
 
-                <!-- ================= IMPROVED SIGNUP ================= -->
+                <!-- SIGNUP -->
                 <div id="signup-form-container" class="max-w-md mx-auto w-full page-hidden">
 
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
@@ -137,7 +137,7 @@
                     </p>
                 </div>
 
-                <!-- RESET PASSWORD (unchanged) -->
+                <!-- RESET PASSWORD -->
                 <div id="forgot-password-container" class="max-w-md mx-auto w-full page-hidden">
 
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Reset Password</h1>
@@ -171,9 +171,16 @@
                 <span class="text-xl font-bold text-gray-800">PillSmart</span>
             </div>
 
-            <button id="logout-btn" class="text-red-600 font-medium">
-                Logout
-            </button>
+            <div class="flex items-center gap-4">
+                <div id="profile-avatar"
+                     class="h-10 w-10 rounded-full bg-teal-500 text-white flex items-center justify-center font-semibold cursor-pointer shadow-md hover:scale-105 transition">
+                    U
+                </div>
+
+                <button id="logout-btn" class="text-red-600 font-medium">
+                    Logout
+                </button>
+            </div>
         </header>
 
         <div class="flex">
@@ -195,8 +202,8 @@
 
     </div>
 
-    <!-- Version bumped to 19.0 -->
-    <script src="script.js?v=19.0"></script>
+    <!-- Version bumped to 20.0 -->
+    <script src="script.js?v=20.0"></script>
 
 </body>
 </html>
