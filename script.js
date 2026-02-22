@@ -100,29 +100,40 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ================= NEXT DOSE ================= */
 
     function getNextDose() {
-        const now = new Date();
-        let upcoming = null;
 
-        slots.forEach(slot => {
-            (slot.schedules || []).forEach(s => {
-                const [h,m] = s.time.split(":");
-                const doseTime = new Date();
-                doseTime.setHours(h, m, 0);
+    const now = new Date();
+    let upcoming = null;
 
-                if(doseTime > now) {
-                    if(!upcoming || doseTime < upcoming.time) {
-                        upcoming = {
-                            time: doseTime,
-                            medicine: slot.medicine_name,
-                            dosage: s.dosage
-                        };
-                    }
-                }
-            });
+    slots.forEach(slot => {
+
+        if(!slot.medicine_name || slot.tablets_left <= 0) return;
+
+        (slot.schedules || []).forEach(s => {
+
+            const [h,m] = s.time.split(":");
+
+            let doseTime = new Date();
+            doseTime.setHours(h, m, 0, 0);
+
+            // If time already passed today → move to tomorrow
+            if(doseTime <= now) {
+                doseTime.setDate(doseTime.getDate() + 1);
+            }
+
+            if(!upcoming || doseTime < upcoming.time) {
+                upcoming = {
+                    time: doseTime,
+                    medicine: slot.medicine_name,
+                    dosage: s.dosage
+                };
+            }
+
         });
 
-        return upcoming;
-    }
+    });
+
+    return upcoming;
+}
 
     /* ================= DASHBOARD ================= */
 
@@ -355,38 +366,48 @@ document.addEventListener('DOMContentLoaded', () => {
             showPage("schedule");
         }
 
-        if(e.target.closest(".save-slot")) {
+       if(e.target.closest(".save-slot")) {
 
-            const slotNumber = e.target.dataset.slot;
-            const slot = slots.find(s=>s.slot_number==slotNumber);
+    const slotNumber = e.target.dataset.slot;
+    const slot = slots.find(s => s.slot_number == slotNumber);
 
-            slot.medicine_name =
-                document.querySelector(`.slot-name[data-slot="${slotNumber}"]`).value;
+    slot.medicine_name =
+        document.querySelector(`.slot-name[data-slot="${slotNumber}"]`).value;
 
-            slot.total_tablets =
-                parseInt(document.querySelector(`.slot-tablets[data-slot="${slotNumber}"]`).value);
+    slot.total_tablets =
+        parseInt(document.querySelector(`.slot-tablets[data-slot="${slotNumber}"]`).value);
 
-            const timeInputs =
-                document.querySelectorAll(`.schedule-time[data-slot="${slotNumber}"]`);
+    if(!slot.tablets_left || slot.tablets_left > slot.total_tablets) {
+        slot.tablets_left = slot.total_tablets;
+    }
 
-            const dosageInputs =
-                document.querySelectorAll(`.schedule-dosage[data-slot="${slotNumber}"]`);
+    const timeInputs =
+        document.querySelectorAll(`.schedule-time[data-slot="${slotNumber}"]`);
 
-            slot.schedules = [];
+    const dosageInputs =
+        document.querySelectorAll(`.schedule-dosage[data-slot="${slotNumber}"]`);
 
-            timeInputs.forEach((t,i)=>{
-                slot.schedules.push({
-                    time:t.value,
-                    dosage:parseInt(dosageInputs[i].value)
-                });
+    slot.schedules = [];
+
+    timeInputs.forEach((t,i)=>{
+        if(t.value) {
+            slot.schedules.push({
+                time: t.value,
+                dosage: parseInt(dosageInputs[i].value) || 1
             });
-
-            slot.schedules.sort((a,b)=>a.time.localeCompare(b.time));
-
-            await apiCall("/update_slot","POST",slot);
-
-            showToast("Slot Saved");
         }
+    });
+
+    slot.schedules.sort((a,b)=>a.time.localeCompare(b.time));
+
+    const res = await apiCall("/update_slot","POST",slot);
+
+    if(res.success) {
+        showToast("Slot Saved Successfully ✅");
+    } else {
+        showToast("Failed to Save Slot ❌","error");
+    }
+}
 
         if(e.target.closest("#save-profile-btn")) {
 
