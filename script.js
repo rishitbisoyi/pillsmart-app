@@ -108,13 +108,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return await res.json();
     }
 
-    function showToast(msg,type='success'){
-        const t=document.getElementById('toast');
-        t.textContent=msg;
-        t.className=`fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg z-50 ${type==='success'?'bg-teal-500':'bg-red-500'}`;
-        t.classList.remove('hidden');
-        setTimeout(()=>t.classList.add('hidden'),3000);
+    function showToast(msg, type='success'){
+    const t = document.getElementById('toast');
+
+    t.textContent = msg;
+
+    // Reset classes properly
+    t.classList.remove('hidden', 'bg-teal-500', 'bg-red-500');
+
+    if(type === 'success'){
+        t.classList.add('bg-teal-500');
+    } else {
+        t.classList.add('bg-red-500');
     }
+
+    t.classList.add(
+        'fixed',
+        'top-4',
+        'right-4',
+        'text-white',
+        'px-4',
+        'py-2',
+        'rounded',
+        'shadow-lg',
+        'z-50'
+    );
+
+    // Show
+    t.classList.remove('hidden');
+
+    // Hide after 3 seconds
+    setTimeout(()=>{
+        t.classList.add('hidden');
+    },3000);
+}
 
     function updateNav(){
         const sidebar=document.getElementById('sidebar-nav');
