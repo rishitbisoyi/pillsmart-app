@@ -17,6 +17,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageTitle = document.getElementById('page-title');
     const avatarDiv = document.getElementById('profile-avatar');
 
+    /* ================= PASSWORD TOGGLE ================= */
+
+    function setupPasswordToggle(inputId, buttonId) {
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(buttonId);
+
+        if (!input || !btn) return;
+
+        btn.addEventListener('click', () => {
+            const icon = btn.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('ph-eye');
+                icon.classList.add('ph-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('ph-eye-slash');
+                icon.classList.add('ph-eye');
+            }
+        });
+    }
+
+    setupPasswordToggle('login-password', 'toggle-login-pass');
+    setupPasswordToggle('signup-password', 'toggle-signup-pass');
+
+    /* ================= NAVIGATION ================= */
+
     const navItems = [
         {id:'dashboard',name:'Dashboard',icon:'ph-house'},
         {id:'schedule',name:'Dispenser Manager',icon:'ph-pill'},
@@ -61,8 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(()=>t.classList.remove('show'),3000);
     }
 
-    /* ================= NAVIGATION ================= */
-
     function updateNav(){
         const sidebar=document.getElementById('sidebar-nav');
         const bottom=document.getElementById('bottom-nav');
@@ -79,8 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <i class="ph-bold ${i.icon} text-2xl"></i></a>`;
         });
     }
-
-    /* ================= AVATAR ================= */
 
     function updateAvatar(){
         if(!avatarDiv) return;
@@ -177,8 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="save-profile-btn" class="primary-btn w-full">Save Changes</button>
         </div>`;
     }
-
-    /* ================= PAGE SWITCH ================= */
 
     function showPage(page){
         activePage=page;
