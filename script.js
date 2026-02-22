@@ -17,6 +17,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageTitle = document.getElementById('page-title');
     const avatarDiv = document.getElementById('profile-avatar');
 
+    /* ================= AUTH PAGE SWITCHING (ADDED) ================= */
+
+    document.getElementById('show-signup-link')?.addEventListener('click', (e)=>{
+        e.preventDefault();
+        loginContainer.classList.add('page-hidden');
+        forgotContainer.classList.add('page-hidden');
+        signupContainer.classList.remove('page-hidden');
+    });
+
+    document.getElementById('show-login-link')?.addEventListener('click', (e)=>{
+        e.preventDefault();
+        signupContainer.classList.add('page-hidden');
+        forgotContainer.classList.add('page-hidden');
+        loginContainer.classList.remove('page-hidden');
+    });
+
+    document.getElementById('forgot-password-link')?.addEventListener('click', (e)=>{
+        e.preventDefault();
+        loginContainer.classList.add('page-hidden');
+        signupContainer.classList.add('page-hidden');
+        forgotContainer.classList.remove('page-hidden');
+    });
+
+    document.getElementById('back-to-login-link')?.addEventListener('click', (e)=>{
+        e.preventDefault();
+        forgotContainer.classList.add('page-hidden');
+        signupContainer.classList.add('page-hidden');
+        loginContainer.classList.remove('page-hidden');
+    });
+
     /* ================= PASSWORD TOGGLE ================= */
 
     function setupPasswordToggle(inputId, buttonId) {
