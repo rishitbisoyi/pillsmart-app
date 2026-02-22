@@ -44,7 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
         location.reload();
     }
 
-    /* 🔥 FIXED API CALL */
+    /* ===== FIXED API ===== */
+
     async function apiCall(endpoint, method="GET", body=null) {
         try {
             const token = getToken();
@@ -99,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ================= NEXT DOSE ================= */
+    /* ================= DASHBOARD ================= */
 
     function getNextDose() {
 
@@ -138,8 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return upcoming;
     }
 
-    /* ================= DASHBOARD ================= */
-
     function renderDashboard() {
 
         const totalSchedules =
@@ -148,27 +147,70 @@ document.addEventListener('DOMContentLoaded', () => {
         const next = getNextDose();
 
         return `
-        <div class="grid md:grid-cols-3 gap-6">
+        <div class="space-y-6">
 
-            <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="font-semibold text-gray-500">Total Slots</h3>
-                <p class="text-3xl font-bold">${slots.length}</p>
+            <h2 class="text-2xl font-bold">Dashboard</h2>
+
+            <div class="grid md:grid-cols-3 gap-6">
+
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="text-gray-500">Total Slots</h3>
+                    <p class="text-3xl font-bold">${slots.length}</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="text-gray-500">Total Schedules</h3>
+                    <p class="text-3xl font-bold">${totalSchedules}</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="text-gray-500">Next Dose</h3>
+                    <p>
+                        ${next ? 
+                            `${next.medicine} (${next.dosage}) at ${next.time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`
+                            : "No upcoming dose"}
+                    </p>
+                </div>
+
             </div>
+        </div>`;
+    }
 
+    /* ================= LOGS ================= */
+
+    function renderLogs() {
+        return `
+        <div class="space-y-6">
+            <h2 class="text-2xl font-bold">Dispense Logs</h2>
             <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="font-semibold text-gray-500">Total Schedules</h3>
-                <p class="text-3xl font-bold">${totalSchedules}</p>
+                ${
+                    dispenseLogs.length === 0
+                    ? "No logs yet"
+                    : dispenseLogs.map(l=>`
+                        <div class="border-b py-2">
+                            ${l.medicine_name} - ${l.dosage}
+                            <div class="text-sm text-gray-500">${l.time}</div>
+                        </div>
+                    `).join("")
+                }
             </div>
+        </div>`;
+    }
 
-            <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="font-semibold text-gray-500">Next Dose</h3>
-                <p class="text-sm">
-                    ${next ? 
-                        `${next.medicine} (${next.dosage}) at ${next.time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`
-                        : "No upcoming dose"}
-                </p>
+    /* ================= ALERTS ================= */
+
+    function renderAlerts() {
+        return `
+        <div class="space-y-6">
+            <h2 class="text-2xl font-bold">Alarm Settings</h2>
+            <div class="bg-white p-6 rounded-xl shadow space-y-4">
+                <input type="file" id="alarm-upload" accept="audio/*"
+                       class="border p-2 w-full rounded">
+                <button id="test-alarm"
+                        class="bg-blue-600 text-white px-4 py-2 rounded">
+                    Test Alarm
+                </button>
             </div>
-
         </div>`;
     }
 
@@ -177,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderProfile() {
 
         return `
-        <div class="flex justify-center items-center w-full">
+        <div class="flex justify-center">
 
             <div class="bg-white p-10 rounded-2xl shadow-lg w-full max-w-xl space-y-6">
 
@@ -207,26 +249,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 </div>
 
-                <input id="prof-name"
-                       class="w-full border p-2 rounded"
-                       value="${userDetails.name || ""}">
+                <div>
+                    <label>Name</label>
+                    <input id="prof-name" class="w-full border p-2 rounded"
+                           value="${userDetails.name || ""}">
+                </div>
 
-                <input class="w-full border p-2 rounded bg-gray-100"
-                       value="${userDetails.email || ""}" disabled>
+                <div>
+                    <label>Email</label>
+                    <input class="w-full border p-2 rounded bg-gray-100"
+                           value="${userDetails.email || ""}" disabled>
+                </div>
 
-                <input id="prof-phone"
-                       class="w-full border p-2 rounded"
-                       value="${userDetails.phone || ""}">
+                <div>
+                    <label>Phone</label>
+                    <input id="prof-phone" class="w-full border p-2 rounded"
+                           value="${userDetails.phone || ""}">
+                </div>
 
-                <input id="new-password"
-                       type="password"
-                       class="w-full border p-2 rounded"
-                       placeholder="New Password">
+                <div class="space-y-2">
+                    <label>Change Password</label>
+                    <input id="new-password" type="password"
+                           class="w-full border p-2 rounded"
+                           placeholder="New Password">
 
-                <input id="confirm-password"
-                       type="password"
-                       class="w-full border p-2 rounded"
-                       placeholder="Confirm Password">
+                    <input id="confirm-password" type="password"
+                           class="w-full border p-2 rounded"
+                           placeholder="Confirm Password">
+                </div>
 
                 <button id="save-profile-btn"
                         class="bg-teal-600 text-white px-4 py-2 rounded w-full">
@@ -245,6 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
             navItems.find(n=>n.id===page)?.name || "Dashboard";
 
         if(page==="dashboard") pageContent.innerHTML = renderDashboard();
+        if(page==="logs") pageContent.innerHTML = renderLogs();
+        if(page==="alerts") pageContent.innerHTML = renderAlerts();
         if(page==="profile") pageContent.innerHTML = renderProfile();
     }
 
@@ -286,6 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Update Failed ❌","error");
             }
         }
+
+        if(e.target.closest("#test-alarm")) {
+            const audio =
+                new Audio(userDetails.custom_ringtone || DEFAULT_RINGTONE_URL);
+            audio.play();
+        }
+
     });
 
     document.addEventListener("change", function(e) {
@@ -320,9 +379,11 @@ document.addEventListener('DOMContentLoaded', () => {
             renderNav();
 
             const profile = await apiCall("/get_profile");
+            const logs = await apiCall("/get_logs");
             const inventory = await apiCall("/get_inventory");
 
             if(profile?.name) userDetails = profile;
+            if(Array.isArray(logs)) dispenseLogs = logs;
             if(Array.isArray(inventory)) slots = inventory;
 
             showPage("dashboard");
