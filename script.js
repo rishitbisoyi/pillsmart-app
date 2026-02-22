@@ -95,53 +95,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function apiCall(endpoint, method='GET', body=null){
-        const token = getAuthToken();
-        const headers = {
-            'Content-Type':'application/json',
-            ...(token?{'Authorization':`Bearer ${token}`}:{})
-        };
-        const res = await fetch(`${BACKEND_URL}${endpoint}`,{
-            method,
-            headers,
-            body: body?JSON.stringify(body):null
-        });
-        return await res.json();
+        try{
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type':'application/json',
+                ...(token?{'Authorization':`Bearer ${token}`}:{})
+            };
+            const res = await fetch(`${BACKEND_URL}${endpoint}`,{
+                method,
+                headers,
+                body: body?JSON.stringify(body):null
+            });
+            return await res.json();
+        } catch(err){
+            console.error("API ERROR:", err);
+            showToast("Server Error",'error');
+            return {success:false};
+        }
     }
 
     function showToast(msg, type='success'){
-    const t = document.getElementById('toast');
-
-    t.textContent = msg;
-
-    // Reset classes properly
-    t.classList.remove('hidden', 'bg-teal-500', 'bg-red-500');
-
-    if(type === 'success'){
-        t.classList.add('bg-teal-500');
-    } else {
-        t.classList.add('bg-red-500');
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `fixed top-4 right-4 text-white px-4 py-2 rounded shadow-lg z-50 ${type==='success'?'bg-teal-500':'bg-red-500'}`;
+        t.classList.remove('hidden');
+        setTimeout(()=>{ t.classList.add('hidden'); },3000);
     }
-
-    t.classList.add(
-        'fixed',
-        'top-4',
-        'right-4',
-        'text-white',
-        'px-4',
-        'py-2',
-        'rounded',
-        'shadow-lg',
-        'z-50'
-    );
-
-    // Show
-    t.classList.remove('hidden');
-
-    // Hide after 3 seconds
-    setTimeout(()=>{
-        t.classList.add('hidden');
-    },3000);
-}
 
     function updateNav(){
         const sidebar=document.getElementById('sidebar-nav');
@@ -176,56 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if(avatarDiv){
-        avatarDiv.addEventListener('click', () => {
-            showPage('profile');
-        });
-    }
-
-    /* ================= AUTH ================= */
-
-    document.getElementById('login-form').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const email=document.getElementById('login-email').value;
-        const password=document.getElementById('login-password').value;
-        const remember=document.getElementById('rememberMe').checked;
-
-        const res=await apiCall('/login','POST',{email,password});
-        if(res.success){
-            saveAuth(res.token,res.name,res.email,remember);
-            location.reload();
-        } else {
-            showToast(res.error||"Login failed",'error');
-        }
-    });
-
-    document.getElementById('signup-form').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const name=document.getElementById('signup-name').value;
-        const email=document.getElementById('signup-email').value;
-        const password=document.getElementById('signup-password').value;
-
-        const res=await apiCall('/register','POST',{name,email,password});
-        if(res.success){
-            showToast("Registered! Please login.");
-            signupContainer.classList.add('page-hidden');
-            loginContainer.classList.remove('page-hidden');
-        } else showToast(res.error,'error');
-    });
-
-    document.getElementById('reset-password-form').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const email=document.getElementById('reset-email').value;
-        const newPass=document.getElementById('reset-password').value;
-
-        const res=await apiCall('/reset_password','POST',{email,new_password:newPass});
-        if(res.success){
-            showToast("Password updated!");
-            forgotContainer.classList.add('page-hidden');
-            loginContainer.classList.remove('page-hidden');
-        } else showToast(res.error,'error');
-    });
-
     /* ================= PROFILE PAGE ================= */
 
     function renderProfile(){
@@ -233,46 +162,34 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="dashboard-card p-8 max-w-2xl space-y-6 bg-white rounded-xl shadow">
 
             <div class="flex flex-col items-center space-y-4">
-
                 <div id="profile-preview"
                      class="h-28 w-28 rounded-full bg-teal-500 text-white flex items-center justify-center text-4xl font-bold cursor-pointer overflow-hidden shadow">
-
                      ${userDetails.profile_pic
                         ? `<img src="${userDetails.profile_pic}" class="h-full w-full object-cover">`
-                        : (userDetails.name || "U")
-                            .split(" ")
-                            .map(n => n[0])
-                            .join("")
-                            .substring(0,2)
-                            .toUpperCase()}
+                        : (userDetails.name || "U").split(" ").map(n=>n[0]).join("").substring(0,2).toUpperCase()}
                 </div>
-
                 <p class="text-sm text-gray-500">Click photo to change</p>
                 <input type="file" id="profile-pic-input" accept="image/*" class="hidden">
             </div>
 
             <div>
                 <label class="font-semibold block mb-1">Full Name</label>
-                <input id="prof-name" class="w-full p-2 border rounded"
-                    value="${userDetails.name||''}">
+                <input id="prof-name" class="w-full p-2 border rounded" value="${userDetails.name||''}">
             </div>
 
             <div>
                 <label class="font-semibold block mb-1">Email</label>
-                <input class="w-full p-2 border rounded bg-gray-100"
-                    value="${userDetails.email||''}" disabled>
+                <input class="w-full p-2 border rounded bg-gray-100" value="${userDetails.email||''}" disabled>
             </div>
 
             <div>
                 <label class="font-semibold block mb-1">Phone</label>
-                <input id="prof-phone" class="w-full p-2 border rounded"
-                    value="${userDetails.phone||''}">
+                <input id="prof-phone" class="w-full p-2 border rounded" value="${userDetails.phone||''}">
             </div>
 
             <div>
                 <label class="font-semibold block mb-1">New Password</label>
-                <input type="password" id="new-password" class="w-full p-2 border rounded"
-                       placeholder="Leave empty if unchanged">
+                <input type="password" id="new-password" class="w-full p-2 border rounded" placeholder="Leave empty if unchanged">
             </div>
 
             <button id="save-profile-btn" class="primary-btn w-full">Save Changes</button>
@@ -288,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.addEventListener('change',(e)=>{
             const file=e.target.files[0];
             if(!file) return;
-
             const reader=new FileReader();
             reader.onload=(ev)=>{
                 userDetails.profile_pic=ev.target.result;
@@ -302,9 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showPage(page){
         activePage=page;
 
-        if(page === 'profile'){
-            pageTitle.textContent = "Profile";
-            pageContent.innerHTML = renderProfile();
+        if(page==='profile'){
+            pageTitle.textContent="Profile";
+            pageContent.innerHTML=renderProfile();
             attachProfileHandlers();
             return;
         }
@@ -315,16 +231,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if(page==='dashboard') pageContent.innerHTML=`<div class="dashboard-card p-6">Welcome ${userDetails.name}</div>`;
         if(page==='schedule') pageContent.innerHTML=`<div class="dashboard-card p-6">Dispenser Manager</div>`;
         if(page==='logs') pageContent.innerHTML=`<div class="dashboard-card p-6">${dispenseLogs.map(l=>`<div class="border p-2 mb-2 rounded">Slot ${l.slot_number} - ${l.medicine_name} - ${l.time}</div>`).join('')}</div>`;
-        if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button id="test-alert-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
+        if(page==='alerts') pageContent.innerHTML=`<div class="dashboard-card p-6"><button class="bg-blue-600 text-white px-4 py-2 rounded">Test Sound</button></div>`;
     }
 
     document.body.addEventListener('click',async(e)=>{
 
         if(e.target.closest('#logout-btn')) performLogout();
-        if(e.target.closest('.nav-link')){e.preventDefault();showPage(e.target.closest('.nav-link').dataset.page);}
         if(e.target.closest('#profile-avatar')) showPage('profile');
 
-        if(e.target.id==='save-profile-btn'){
+        const saveBtn = e.target.closest('#save-profile-btn');
+        if(saveBtn){
             const newName=document.getElementById('prof-name').value;
             const newPhone=document.getElementById('prof-phone').value;
             const newPassword=document.getElementById('new-password').value;
@@ -337,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if(newPassword) payload.new_password=newPassword;
 
-            const res = await apiCall('/update_profile','POST',payload);
+            const res=await apiCall('/update_profile','POST',payload);
 
             if(res.success){
                 showToast("Profile Updated Successfully");
@@ -354,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             apiCall('/get_logs'),
             apiCall('/get_profile')
         ]);
+
         slots=Array.isArray(inv)?inv:[];
         dispenseLogs=Array.isArray(logs)?logs:[];
         if(profile?.name) userDetails=profile;
