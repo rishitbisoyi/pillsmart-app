@@ -357,13 +357,13 @@ def get_logs_route(current_user):
 
 # ─────────────────────────── DEVICE ─────────────────────────────
 
-@app.route("/device_alarms", methods=["GET"])
-def device_alarms():
+@app.route("/device_schedules", methods=["GET"])
+def device_schedules():
     """
-    Used by the hardware device to fetch today's alarm times.
+    Used by hardware device to fetch all slot schedules.
     Called with ?email=user@example.com
-    No auth token needed (device may not have one).
     """
+
     user_email = request.args.get("email", "").strip().lower()
 
     if not user_email:
@@ -372,16 +372,25 @@ def device_alarms():
     user_inv = inventory_col.find_one({'user_email': user_email})
 
     if not user_inv:
-        return jsonify({"alarms": []})
+        return jsonify({"schedules": []})
 
-    unique_times = set()
+    result = []
+
     for slot in user_inv.get('slots', []):
+        slot_number = slot.get("slot_number")
+
         for schedule in slot.get("schedules", []):
-            if schedule.get("time"):
-                unique_times.add(schedule["time"])
+            time_str = schedule.get("time")
 
-    return jsonify({"alarms": sorted(unique_times)})
+            if time_str and ":" in time_str:
+                hour, minute = time_str.split(":")
+                result.append({
+                    "slot": slot_number,
+                    "hour": int(hour),
+                    "minute": int(minute)
+                })
 
+    return jsonify({"schedules": result})
 # ─────────────────────────── RUN ────────────────────────────────
 
 if __name__ == "__main__":
