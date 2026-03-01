@@ -9,8 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <!-- Version bumped to 20.0 -->
-    <link rel="stylesheet" href="style.css?v=20.0">
+    <link rel="stylesheet" href="style.css?v=21.0">
 </head>
 
 <body class="bg-gray-100 font-sans">
@@ -32,7 +31,10 @@
                     </div>
                     <div>
                         <p class="text-3xl font-bold leading-relaxed mb-4">
-                            "Simplifying health, one pill at a time."
+                            "Simplifying health,<br>one pill at a time."
+                        </p>
+                        <p class="text-sm opacity-75">
+                            Smart scheduling · Low stock alerts · Auto dispensing
                         </p>
                     </div>
                 </div>
@@ -41,166 +43,323 @@
             <!-- Right Panel -->
             <div class="login-right-panel w-full lg:w-3/5">
 
-                <!-- LOGIN -->
+                <!-- Mobile Logo -->
+                <div class="flex items-center justify-center gap-2 mb-8 lg:hidden">
+                    <i class="ph-fill ph-pill text-3xl text-teal-500"></i>
+                    <span class="text-2xl font-bold text-gray-800">PillSmart</span>
+                </div>
+
+                <!-- ── LOGIN ── -->
                 <div id="login-form-container" class="max-w-md mx-auto w-full">
 
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
-                    <p class="text-gray-600 mb-8">Access your personalized medicine dashboard.</p>
+                    <p class="text-gray-500 mb-8">Access your personalized medicine dashboard.</p>
 
-                    <form id="login-form" class="space-y-6">
+                    <form id="login-form" class="space-y-5">
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" id="login-email" required>
+                            <input type="email" id="login-email" placeholder="you@example.com" required>
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                             <div class="relative">
-                                <input type="password" id="login-password" class="pr-10" required>
+                                <input type="password" id="login-password" class="pr-10" placeholder="••••••••" required>
                                 <button type="button" id="toggle-login-pass"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                     <i class="ph-bold ph-eye text-xl"></i>
                                 </button>
                             </div>
                         </div>
 
                         <div class="flex items-center justify-between text-sm">
+                            <label class="flex items-center gap-2 cursor-pointer text-gray-600">
+                                <input type="checkbox" id="rememberMe" class="rounded">
+                                Remember me
+                            </label>
                             <a href="#" id="forgot-password-link" class="text-teal-600 hover:underline">
                                 Forgot password?
                             </a>
-
-                            <label class="flex items-center cursor-pointer">
-                                <span class="mr-2 text-gray-700">Remember me</span>
-                                <input type="checkbox" id="rememberMe">
-                            </label>
                         </div>
 
                         <button type="submit" class="primary-btn w-full">
                             Log In
                         </button>
+
+                        <div id="login-error" class="text-red-500 text-sm text-center hidden"></div>
                     </form>
 
                     <p class="text-sm text-gray-500 mt-8 text-center">
                         Don't have an account?
-                        <a href="#" id="show-signup-link" class="text-teal-600 hover:underline">
-                            Sign Up
-                        </a>
+                        <a href="#" id="show-signup-link" class="text-teal-600 hover:underline font-medium">Sign Up</a>
                     </p>
                 </div>
 
-                <!-- SIGNUP -->
+                <!-- ── SIGNUP ── -->
                 <div id="signup-form-container" class="max-w-md mx-auto w-full page-hidden">
 
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
-                    <p class="text-gray-600 mb-8">Join PillSmart and manage medicines smarter.</p>
+                    <p class="text-gray-500 mb-8">Join PillSmart and manage medicines smarter.</p>
 
-                    <form id="signup-form" class="space-y-6">
+                    <form id="signup-form" class="space-y-5">
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Full Name
-                            </label>
-                            <input type="text" id="signup-name" required>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" id="signup-name" placeholder="John Doe" required>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Email Address
-                            </label>
-                            <input type="email" id="signup-email" required>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <input type="email" id="signup-email" placeholder="you@example.com" required>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Password
-                            </label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                             <div class="relative">
-                                <input type="password" id="signup-password" class="pr-10" required>
+                                <input type="password" id="signup-password" class="pr-10" placeholder="Min 8 characters" required>
                                 <button type="button" id="toggle-signup-pass"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                     <i class="ph-bold ph-eye text-xl"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <button type="submit" class="primary-btn w-full !mt-6">
+                        <button type="submit" class="primary-btn w-full">
                             Create Account
                         </button>
+
+                        <div id="signup-error" class="text-red-500 text-sm text-center hidden"></div>
                     </form>
 
                     <p class="text-sm text-gray-500 mt-8 text-center">
                         Already have an account?
-                        <a href="#" id="show-login-link" class="text-teal-600 hover:underline">
-                            Log In
-                        </a>
+                        <a href="#" id="show-login-link" class="text-teal-600 hover:underline font-medium">Log In</a>
                     </p>
                 </div>
 
-                <!-- RESET PASSWORD -->
+                <!-- ── RESET PASSWORD ── -->
                 <div id="forgot-password-container" class="max-w-md mx-auto w-full page-hidden">
 
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Reset Password</h1>
+                    <p class="text-gray-500 mb-8">Enter your email and a new password.</p>
 
-                    <form id="reset-password-form" class="space-y-4">
-                        <input type="email" id="reset-email" placeholder="Email" required>
-                        <input type="password" id="reset-password" placeholder="New Password" required>
+                    <form id="reset-password-form" class="space-y-5">
 
-                        <button type="submit" class="primary-btn w-full !mt-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="reset-email" placeholder="you@example.com" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                            <input type="password" id="reset-password" placeholder="••••••••" required>
+                        </div>
+
+                        <button type="submit" class="primary-btn w-full">
                             Update Password
                         </button>
+
+                        <div id="reset-error" class="text-red-500 text-sm text-center hidden"></div>
                     </form>
 
                     <p class="text-sm text-gray-500 mt-8 text-center">
-                        <a href="#" id="back-to-login-link" class="text-teal-600 hover:underline">
-                            Back to Login
-                        </a>
+                        <a href="#" id="back-to-login-link" class="text-teal-600 hover:underline">← Back to Login</a>
                     </p>
                 </div>
 
-            </div>
-        </div>
-    </div>
+            </div><!-- /login-right-panel -->
+        </div><!-- /login-container -->
+    </div><!-- /authPage -->
 
     <!-- ================= MAIN APP ================= -->
     <div id="appContainer" class="page-hidden min-h-screen flex flex-col">
 
-        <header class="main-app-header py-4 px-6 flex justify-between items-center bg-white shadow-sm">
-            <div class="flex items-center gap-4">
+        <!-- Header -->
+        <header class="main-app-header py-4 px-6 flex justify-between items-center bg-white shadow-sm sticky top-0 z-30">
+            <div class="flex items-center gap-3">
                 <i class="ph-fill ph-pill text-3xl text-teal-500"></i>
                 <span class="text-xl font-bold text-gray-800">PillSmart</span>
             </div>
 
             <div class="flex items-center gap-4">
-                
-
-                <button id="logout-btn" class="text-red-600 font-medium">
-                    Logout
+                <span id="header-username" class="hidden md:block text-sm text-gray-500"></span>
+                <button id="logout-btn"
+                        class="flex items-center gap-1 text-red-500 hover:text-red-700 font-medium text-sm transition-colors">
+                    <i class="ph-bold ph-sign-out text-lg"></i>
+                    <span class="hidden sm:inline">Logout</span>
                 </button>
             </div>
         </header>
 
-        <div class="flex flex-1">
+        <div class="flex flex-1 overflow-hidden">
 
-            <aside class="hidden md:flex md:flex-col md:w-64 bg-white shadow-lg">
-                <nav id="sidebar-nav" class="py-4"></nav>
+            <!-- Sidebar (desktop) -->
+            <aside class="hidden md:flex md:flex-col md:w-56 bg-white shadow-sm border-r border-gray-200 shrink-0">
+                <nav id="sidebar-nav" class="py-6 flex flex-col gap-1"></nav>
             </aside>
 
-            <main class="flex-1 p-6 pb-24 md:pb-6 bg-gray-100">
-                <h1 id="page-title" class="text-3xl font-bold text-gray-900 mb-6">
-                    Dashboard
-                </h1>
+            <!-- Page content -->
+            <main class="flex-1 p-4 md:p-6 pb-24 md:pb-6 overflow-y-auto bg-gray-100">
+                <h1 id="page-title" class="text-2xl md:text-3xl font-bold text-gray-900 mb-6"></h1>
                 <div id="page-content"></div>
             </main>
 
         </div>
 
-        <nav id="bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner"></nav>
+        <!-- Bottom nav (mobile) -->
+        <nav id="bottom-nav"
+             class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg flex z-30">
+        </nav>
 
-    </div>
+    </div><!-- /appContainer -->
 
-    <!-- Version bumped to 20.0 -->
-    <script src="script.js?v=20.0"></script>
+    <script src="script.js?v=21.0"></script>
+
+    <!-- ─── Auth form JS ─── -->
+    <script>
+    (function () {
+
+        const BACKEND_URL = '';
+
+        /* helpers */
+        const $  = id => document.getElementById(id);
+        const show = id => { $(id)?.classList.remove('page-hidden'); };
+        const hide = id => { $(id)?.classList.add('page-hidden');    };
+        const showErr = (id, msg) => {
+            const el = $(id);
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 4000);
+        };
+
+        /* toggle password visibility */
+        function bindToggle(btnId, inputId) {
+            const btn   = $(btnId);
+            const input = $(inputId);
+            if (!btn || !input) return;
+            btn.addEventListener('click', () => {
+                const show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.querySelector('i').className =
+                    `ph-bold ${show ? 'ph-eye-slash' : 'ph-eye'} text-xl`;
+            });
+        }
+        bindToggle('toggle-login-pass',  'login-password');
+        bindToggle('toggle-signup-pass', 'signup-password');
+
+        /* form switchers */
+        $('show-signup-link')?.addEventListener('click', e => {
+            e.preventDefault();
+            hide('login-form-container');
+            hide('forgot-password-container');
+            show('signup-form-container');
+        });
+        $('show-login-link')?.addEventListener('click', e => {
+            e.preventDefault();
+            hide('signup-form-container');
+            hide('forgot-password-container');
+            show('login-form-container');
+        });
+        $('forgot-password-link')?.addEventListener('click', e => {
+            e.preventDefault();
+            hide('login-form-container');
+            hide('signup-form-container');
+            show('forgot-password-container');
+        });
+        $('back-to-login-link')?.addEventListener('click', e => {
+            e.preventDefault();
+            hide('forgot-password-container');
+            show('login-form-container');
+        });
+
+        /* save token helper */
+        function saveToken(token, remember) {
+            if (remember) localStorage.setItem('authToken', token);
+            else          sessionStorage.setItem('authToken', token);
+        }
+
+        /* LOGIN */
+        $('login-form')?.addEventListener('submit', async e => {
+            e.preventDefault();
+            const email    = $('login-email').value.trim();
+            const password = $('login-password').value;
+            const remember = $('rememberMe')?.checked || false;
+
+            try {
+                const res  = await fetch(`${BACKEND_URL}/login`, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    saveToken(data.token, remember);
+                    location.reload();
+                } else {
+                    showErr('login-error', data.message || 'Invalid email or password.');
+                }
+            } catch {
+                showErr('login-error', 'Server error. Please try again.');
+            }
+        });
+
+        /* SIGNUP */
+        $('signup-form')?.addEventListener('submit', async e => {
+            e.preventDefault();
+            const name     = $('signup-name').value.trim();
+            const email    = $('signup-email').value.trim();
+            const password = $('signup-password').value;
+
+            if (password.length < 8) {
+                showErr('signup-error', 'Password must be at least 8 characters.'); return;
+            }
+
+            try {
+                const res  = await fetch(`${BACKEND_URL}/register`, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    saveToken(data.token, false);
+                    location.reload();
+                } else {
+                    showErr('signup-error', data.message || 'Registration failed.');
+                }
+            } catch {
+                showErr('signup-error', 'Server error. Please try again.');
+            }
+        });
+
+        /* RESET PASSWORD */
+        $('reset-password-form')?.addEventListener('submit', async e => {
+            e.preventDefault();
+            const email    = $('reset-email').value.trim();
+            const password = $('reset-password').value;
+
+            try {
+                const res  = await fetch(`${BACKEND_URL}/reset_password`, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ email, new_password: password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    hide('forgot-password-container');
+                    show('login-form-container');
+                } else {
+                    showErr('reset-error', data.message || 'Reset failed. Check your email.');
+                }
+            } catch {
+                showErr('reset-error', 'Server error. Please try again.');
+            }
+        });
+
+    })();
+    </script>
 
 </body>
 </html>
