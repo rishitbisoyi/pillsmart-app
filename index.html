@@ -9,7 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <link rel="stylesheet" href="style.css?v=21.0">
+    <link rel="stylesheet" href="style.css?v=22.0">
 </head>
 
 <body class="bg-gray-100 font-sans">
@@ -24,18 +24,33 @@
 
             <!-- Left Panel -->
             <div class="login-left-panel relative hidden lg:flex">
-                <div class="login-left-content z-20 flex flex-col justify-between h-full">
-                    <div class="flex items-center gap-2">
+                <div class="login-left-content">
+                    <!-- Brand -->
+                    <div class="flex items-center gap-3">
                         <i class="ph-fill ph-pill text-3xl"></i>
-                        <span class="text-xl font-bold">PillSmart</span>
+                        <span style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;">PillSmart</span>
                     </div>
+
+                    <!-- Tagline + features -->
                     <div>
-                        <p class="text-3xl font-bold leading-relaxed mb-4">
+                        <p style="font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:600;line-height:1.4;margin-bottom:1.5rem;">
                             "Simplifying health,<br>one pill at a time."
                         </p>
-                        <p class="text-sm opacity-75">
-                            Smart scheduling · Low stock alerts · Auto dispensing
-                        </p>
+
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.15);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.25);border-radius:99px;padding:8px 16px;font-size:0.82rem;font-weight:500;">
+                                <i class="ph-fill ph-clock" style="font-size:1rem;"></i>
+                                Smart dose scheduling
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.15);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.25);border-radius:99px;padding:8px 16px;font-size:0.82rem;font-weight:500;">
+                                <i class="ph-fill ph-bell" style="font-size:1rem;"></i>
+                                Low stock alerts
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.15);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.25);border-radius:99px;padding:8px 16px;font-size:0.82rem;font-weight:500;">
+                                <i class="ph-fill ph-shield-check" style="font-size:1rem;"></i>
+                                Auto dispense tracking
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -52,8 +67,8 @@
                 <!-- ── LOGIN ── -->
                 <div id="login-form-container" class="max-w-md mx-auto w-full">
 
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
-                    <p class="text-gray-500 mb-8">Access your personalized medicine dashboard.</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2" style="font-family:'Playfair Display',serif;">Welcome Back!</h1>
+                    <p class="text-gray-500 mb-8" style="font-size:0.92rem;">Access your personalized medicine dashboard.</p>
 
                     <form id="login-form" class="space-y-5">
 
@@ -99,14 +114,14 @@
                 <!-- ── SIGNUP ── -->
                 <div id="signup-form-container" class="max-w-md mx-auto w-full page-hidden">
 
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
-                    <p class="text-gray-500 mb-8">Join PillSmart and manage medicines smarter.</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2" style="font-family:'Playfair Display',serif;">Create Account</h1>
+                    <p class="text-gray-500 mb-8" style="font-size:0.92rem;">Join PillSmart and manage medicines smarter.</p>
 
                     <form id="signup-form" class="space-y-5">
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                            <input type="text" id="signup-name" placeholder="Name" required>
+                            <input type="text" id="signup-name" placeholder="John Doe" required>
                         </div>
 
                         <div>
@@ -141,19 +156,19 @@
                 <!-- ── RESET PASSWORD ── -->
                 <div id="forgot-password-container" class="max-w-md mx-auto w-full page-hidden">
 
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Reset Password</h1>
-                    <p class="text-gray-500 mb-8">Enter your email and a new password.</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2" style="font-family:'Playfair Display',serif;">Reset Password</h1>
+                    <p class="text-gray-500 mb-8" style="font-size:0.92rem;">Enter your email and a new password.</p>
 
                     <form id="reset-password-form" class="space-y-5">
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" id="reset-email" placeholder="you@example.com" required>
+                            <input type="email" id="reset-email" placeholder="Email" required>
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                            <input type="password" id="reset-password" placeholder="••••••••" required>
+                            <input type="password" id="reset-password" placeholder="Min 8 characters" required>
                         </div>
 
                         <button type="submit" class="primary-btn w-full">
@@ -179,7 +194,7 @@
         <header class="main-app-header py-4 px-6 flex justify-between items-center bg-white shadow-sm sticky top-0 z-30">
             <div class="flex items-center gap-3">
                 <i class="ph-fill ph-pill text-3xl text-teal-500"></i>
-                <span class="text-xl font-bold text-gray-800">PillSmart</span>
+                <span class="text-xl font-bold text-gray-800" style="font-family:'Playfair Display',serif;letter-spacing:-0.01em;">PillSmart</span>
             </div>
 
             <div class="flex items-center gap-4">
@@ -214,7 +229,7 @@
 
     </div><!-- /appContainer -->
 
-    <script src="script.js?v=21.0"></script>
+    <script src="script.js?v=22.0"></script>
 
     <!-- ─── Auth form JS ─── -->
     <script>
