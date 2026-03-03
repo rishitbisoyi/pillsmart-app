@@ -266,18 +266,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderLogs() {
         return `
-        <div class="space-y-6">
-            <h2 class="text-2xl font-bold">Dispense Logs</h2>
-            <div class="bg-white p-6 rounded-xl shadow">
+        <div class="space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <h2 class="text-2xl font-bold">Dispense Logs</h2>
+                ${dispenseLogs.length > 0 ? `
+                    <button id="clear-all-logs"
+                            class="flex items-center gap-2 text-sm font-semibold text-red-500
+                                   bg-red-50 border border-red-200 px-4 py-2 rounded-lg
+                                   hover:bg-red-100 transition-colors">
+                        🗑 Clear All
+                    </button>` : ""}
+            </div>
+
+            <div class="bg-white rounded-xl shadow overflow-hidden">
                 ${dispenseLogs.length === 0
-                    ? `<p class="text-gray-500 text-sm">No logs yet.</p>`
-                    : dispenseLogs.map(l => `
-                        <div class="border-b py-2">
-                            <span class="font-medium">${l.medicine_name}</span>
-                            — ${l.dosage} tablet(s)
-                            <div class="text-sm text-gray-500">${l.time}</div>
-                        </div>
-                    `).join("")
+                    ? `<div class="p-10 text-center text-gray-400">
+                           <p class="text-4xl mb-3">📋</p>
+                           <p class="font-medium text-gray-500">No dispense logs yet.</p>
+                           <p class="text-sm mt-1">Logs will appear here once medicines are dispensed.</p>
+                       </div>`
+                    : `<div class="divide-y divide-gray-100">
+                        ${dispenseLogs.map(l => `
+                            <div class="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-teal-50 flex items-center
+                                                justify-center text-teal-600 font-bold text-sm shrink-0">
+                                        ${(l.medicine_name || "?")[0].toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-800">${l.medicine_name}</p>
+                                        <p class="text-sm text-gray-500">${l.dosage} tablet(s) · Slot ${l.slot_number}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-right hidden sm:block">
+                                        <p class="text-sm text-gray-600">${l.time || ""}</p>
+                                        <p class="text-xs text-green-600 font-medium">${l.status || "Taken"}</p>
+                                    </div>
+                                    <button data-log-id="${l._id}"
+                                            class="delete-log w-8 h-8 flex items-center justify-center
+                                                   rounded-lg text-gray-300 hover:text-red-500
+                                                   hover:bg-red-50 transition-colors text-sm font-bold"
+                                            title="Delete this log">✕</button>
+                                </div>
+                            </div>`).join("")}
+                       </div>`
                 }
             </div>
         </div>`;
@@ -383,6 +416,17 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
     }
 
+    /* ═══════════════════ REFRESH LOGS FROM SERVER ═══════════════════ */
+
+    async function refreshLogs() {
+        const logs = await apiCall("/get_logs");
+        if (Array.isArray(logs)) {
+            dispenseLogs = logs;
+            // Re-render the logs page in place if the user is currently on it
+            if (activePage === "logs") showPage("logs");
+        }
+    }
+
     /* ═══════════════════ EVENT DELEGATION ═══════════════════ */
 
     document.body.addEventListener("click", async e => {
@@ -395,7 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!slot.schedules) slot.schedules = [];
             slot.schedules.push({ time: "09:00", dosage: 1 });
             showPage("schedule");
-            // scroll to the slot card so user sees the new row
             requestAnimationFrame(() => {
                 const card = document.querySelector(`[data-slot="${slotNumber}"].save-slot`)
                     ?.closest(".bg-white");
@@ -421,7 +464,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const slotNumber = parseInt(btn.dataset.slot);
             const slot       = slots.find(s => s.slot_number === slotNumber);
 
-            /* read name & tablets from the card */
             slot.medicine_name =
                 document.querySelector(`.slot-name[data-slot="${slotNumber}"]`).value.trim();
 
@@ -430,10 +472,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!slot.total_tablets || newTotal !== slot.total_tablets) {
                 slot.total_tablets = newTotal;
-                slot.tablets_left  = newTotal;     // reset remaining when total changes
+                slot.tablets_left  = newTotal;
             }
 
-            /* read all schedule rows */
             const timeInputs   = document.querySelectorAll(`.schedule-time[data-slot="${slotNumber}"]`);
             const dosageInputs = document.querySelectorAll(`.schedule-dosage[data-slot="${slotNumber}"]`);
 
@@ -452,9 +493,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await apiCall("/update_slot", "POST", slot);
             if (res?.success === true) {
                 showToast(`Slot ${slotNumber} saved ✅`);
-                showPage("schedule");   // re-render to reflect saved state
+                showPage("schedule");
             } else {
                 showToast(`Failed to save Slot ${slotNumber} ❌`, "error");
+            }
+            return;
+        }
+
+        /* ── DELETE single log ── */
+        if (e.target.closest(".delete-log")) {
+            const btn   = e.target.closest(".delete-log");
+            const logId = btn.dataset.logId;
+            const res   = await apiCall("/delete_log", "POST", { log_id: logId });
+            if (res?.success === true) {
+                dispenseLogs = dispenseLogs.filter(l => l._id !== logId);
+                showPage("logs");
+                showToast("Log deleted ✅");
+            } else {
+                showToast("Failed to delete log ❌", "error");
+            }
+            return;
+        }
+
+        /* ── CLEAR ALL logs ── */
+        if (e.target.closest("#clear-all-logs")) {
+            if (!confirm("Delete all dispense logs? This cannot be undone.")) return;
+            const res = await apiCall("/delete_all_logs", "POST");
+            if (res?.success === true) {
+                dispenseLogs = [];
+                showPage("logs");
+                showToast("All logs cleared ✅");
+            } else {
+                showToast("Failed to clear logs ❌", "error");
             }
             return;
         }
@@ -537,6 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkAndDispense() {
         const currentTime = new Date().toTimeString().slice(0, 5);
+        let didDispense = false;
 
         for (const slot of slots) {
             for (const s of (slot.schedules || [])) {
@@ -552,10 +623,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     await apiCall("/update_slot", "POST", slot);
                     showToast(`Dispensed ${s.dosage} tablet(s) of ${slot.medicine_name}`);
-
-                    if (activePage === "dashboard") showPage("dashboard");
+                    didDispense = true;
                 }
             }
+        }
+
+        if (didDispense) {
+            // Pull fresh logs from server so new entries appear accurately
+            await refreshLogs();
+            // Refresh dashboard next-dose widget too
+            if (activePage === "dashboard") showPage("dashboard");
         }
     }
 
@@ -578,7 +655,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Array.isArray(logs)) dispenseLogs = logs;
 
             if (Array.isArray(inventory) && inventory.length > 0) {
-                /* merge backend data into the 8 default slots */
                 inventory.forEach(backendSlot => {
                     const idx = slots.findIndex(s => s.slot_number === backendSlot.slot_number);
                     if (idx !== -1) slots[idx] = backendSlot;
