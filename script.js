@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return `
         <div class="space-y-6">
-            <h2 class="text-2xl font-bold">Dashboard</h2>
+            
             <div class="grid md:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h3 class="text-gray-500">Total Slots</h3>
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSchedule() {
         return `
         <div class="space-y-6">
-            <h2 class="text-2xl font-bold">Schedule Inventory</h2>
+            
             <div class="grid md:grid-cols-2 gap-6">
                 ${slots.map(slot => renderSlotCard(slot)).join("")}
             </div>
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
         <div class="space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-3">
-                <h2 class="text-2xl font-bold">Dispense Logs</h2>
+                
                 ${dispenseLogs.length > 0 ? `
                     <button id="clear-all-logs"
                             class="flex items-center gap-2 text-sm font-semibold text-red-500
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderAlerts() {
         return `
         <div class="space-y-6">
-            <h2 class="text-2xl font-bold">Alarm Settings</h2>
+            
             <div class="bg-white p-6 rounded-xl shadow space-y-4">
                 <label class="block text-sm font-medium text-gray-600">
                     Upload Custom Ringtone
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
         <div class="flex justify-center">
             <div class="bg-white p-10 rounded-2xl shadow-lg w-full max-w-xl space-y-6">
-                <h2 class="text-2xl font-bold text-center">Profile Settings</h2>
+                
 
                 <div class="flex flex-col items-center space-y-3">
                     <div id="profile-preview"
