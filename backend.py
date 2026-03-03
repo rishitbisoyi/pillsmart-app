@@ -391,6 +391,31 @@ def device_schedules():
                 })
 
     return jsonify({"schedules": result})
+
+@app.route("/delete_log", methods=["POST"])
+@token_required
+def delete_log(current_user):
+    from bson import ObjectId
+    data   = request.json or {}
+    log_id = data.get("log_id", "")
+
+    try:
+        result = logs_col.delete_one({
+            "_id":        ObjectId(log_id),
+            "user_email": current_user["email"]   # safety: own logs only
+        })
+        if result.deleted_count == 1:
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Log not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
+
+@app.route("/delete_all_logs", methods=["POST"])
+@token_required
+def delete_all_logs(current_user):
+    logs_col.delete_many({"user_email": current_user["email"]})
+    return jsonify({"success": True})
 # ─────────────────────────── RUN ────────────────────────────────
 
 if __name__ == "__main__":
