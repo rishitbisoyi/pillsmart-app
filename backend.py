@@ -336,7 +336,7 @@ def log_dispense_route(current_user):
         "slot_number":   data["slot_number"],
         "medicine_name": data["medicine_name"],
         "dosage":        data["dosage"],
-        "time":          datetime.datetime.now().strftime("%Y-%m-%d %I:%M %p"),
+        "time":          datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=5, minutes=30))).strftime("%Y-%m-%d %I:%M %p"),
         "status":        data["status"],
         "user_email":    current_user["email"]
     })
