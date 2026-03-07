@@ -77,6 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: "profile",   name: "Profile" }
     ];
 
+    function updateBottomNavVisibility() {
+        const bottomNav = document.getElementById("bottom-nav");
+        if (bottomNav) {
+            bottomNav.style.display = window.innerWidth < 768 ? "flex" : "none";
+        }
+    }
+
     function renderNav() {
         const sidebar = document.getElementById("sidebar-nav");
         const bottom  = document.getElementById("bottom-nav");
@@ -95,6 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
                    ${n.name}
                  </a>`;
         });
+
+        updateBottomNavVisibility();
+        window.addEventListener("resize", updateBottomNavVisibility);
     }
 
     /* ═══════════════════ DASHBOARD HELPERS ═══════════════════ */
@@ -103,7 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = new Date();
         let upcoming = null;
         slots.forEach(slot => {
-            if (!slot.medicine_name || slot.tablets_left <= 0) return;
+            // FIX: show next dose even if tablets_left is 0 (so user knows schedule exists)
+            if (!slot.medicine_name) return;
             (slot.schedules || []).forEach(s => {
                 if (!s.time) return;
                 const [h, m] = s.time.split(":").map(Number);
@@ -120,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getTodaySchedule() {
         const items = [];
         slots.forEach(slot => {
+            // FIX: include all slots with a medicine name, regardless of stock level
             if (!slot.medicine_name) return;
             (slot.schedules || []).forEach(s => {
                 if (!s.time) return;
@@ -136,7 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getLowStockSlots() {
-        return slots.filter(s => s.medicine_name && s.tablets_left <= LOW_STOCK_THRESHOLD);
+        // FIX: include slots where medicine is set AND tablets_left is 0 OR <= threshold
+        return slots.filter(s =>
+            s.medicine_name && (s.tablets_left === 0 || s.tablets_left <= LOW_STOCK_THRESHOLD)
+        );
     }
 
     function formatTime12(time24) {
@@ -312,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderSlotCard(slot) {
-        const lowStock = slot.tablets_left > 0 && slot.tablets_left <= LOW_STOCK_THRESHOLD;
+        const lowStock = slot.medicine_name && slot.tablets_left <= LOW_STOCK_THRESHOLD;
         const scheduleRows = (slot.schedules || []).map((sch, i) => `
             <div class="flex items-center gap-2 schedule-row">
                 <input type="time"
@@ -334,11 +349,13 @@ document.addEventListener('DOMContentLoaded', () => {
              ${lowStock ? "border-2 border-red-400" : "border border-gray-200"}">
             <div class="flex items-center justify-between">
                 <h3 class="font-bold text-lg text-teal-700">Slot ${slot.slot_number}</h3>
-                ${lowStock
-                    ? `<span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">⚠ Low Stock (${slot.tablets_left} left)</span>`
-                    : slot.tablets_left > 0
-                        ? `<span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">${slot.tablets_left} remaining</span>`
-                        : `<span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">Empty</span>`}
+                ${lowStock && slot.tablets_left === 0
+                    ? `<span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Empty</span>`
+                    : lowStock
+                        ? `<span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">⚠ Low Stock (${slot.tablets_left} left)</span>`
+                        : slot.tablets_left > 0
+                            ? `<span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">${slot.tablets_left} remaining</span>`
+                            : `<span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">Empty</span>`}
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-600 mb-1">Medicine Name</label>
@@ -675,15 +692,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const slotNumber = parseInt(btn.dataset.slot);
             const slot       = slots.find(s => s.slot_number === slotNumber);
 
+            // FIX: always read current values from inputs
             slot.medicine_name =
                 document.querySelector(`.slot-name[data-slot="${slotNumber}"]`).value.trim();
             const newTotal =
                 parseInt(document.querySelector(`.slot-tablets[data-slot="${slotNumber}"]`).value) || 0;
 
-            if (!slot.total_tablets || newTotal !== slot.total_tablets) {
-                slot.total_tablets = newTotal;
-                slot.tablets_left  = newTotal;
+            // FIX: only reset tablets_left if total actually changed or was never set
+            if (newTotal !== slot.total_tablets) {
+                slot.tablets_left = newTotal;
             }
+            slot.total_tablets = newTotal;
 
             const timeInputs   = document.querySelectorAll(`.schedule-time[data-slot="${slotNumber}"]`);
             const dosageInputs = document.querySelectorAll(`.schedule-dosage[data-slot="${slotNumber}"]`);
@@ -732,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        /* ── NAV links (sidebar, bottom nav, inline page links) ── */
+        /* ── NAV links ── */
         if (e.target.closest(".nav-link")) {
             e.preventDefault();
             showPage(e.target.closest(".nav-link").dataset.page);
@@ -851,9 +870,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Array.isArray(logs)) dispenseLogs = logs;
 
             if (Array.isArray(inventory) && inventory.length > 0) {
+                // FIX: replace entire slot object from backend so medicine_name etc are preserved
                 inventory.forEach(backendSlot => {
                     const idx = slots.findIndex(s => s.slot_number === backendSlot.slot_number);
-                    if (idx !== -1) slots[idx] = backendSlot;
+                    if (idx !== -1) slots[idx] = { ...slots[idx], ...backendSlot };
                 });
             }
 
