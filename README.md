@@ -217,18 +217,6 @@ The collaboration enabled the successful development of both a functional softwa
 
 ---
 
-## 📸 Project Demonstration
-
-### Software Interface
-
-_Add screenshots of the web application here._
-
-### Hardware Prototype
-
-_Add images of the pill dispensing hardware here._
-
----
-
 ## 🎓 Academic Project
 
 This project was developed as part of a multidisciplinary engineering initiative involving students from Computer Science Engineering, Electrical Engineering, and Mechanical Engineering disciplines.
